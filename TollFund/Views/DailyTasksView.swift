@@ -302,10 +302,12 @@ struct TaskSectionView: View {
                 DailyTaskRow(task: task, onEdit: {
                     onEditTask(task)
                 })
-            }
-            .onDelete { indexSet in
-                for index in indexSet {
-                    onDeleteTask(tasks[index])
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        onDeleteTask(task)
+                    } label: {
+                        Label("删除", systemImage: "trash")
+                    }
                 }
             }
         }
