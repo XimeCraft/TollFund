@@ -53,14 +53,30 @@ struct DashboardView: View {
             }
             // 监听任务完成状态变化
             .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
+                // 添加延迟确保Core Data保存完成
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    refreshData()
+                }
+            }
+            // 额外监听任务状态变化
+            .onChange(of: dailyTasks.map { "\($0.isCompleted)" }.joined()) { _ in
+                refreshData()
+            }
+            // 监听任务完成状态变化的自定义通知
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("TaskCompletionChanged"))) { _ in
+                print("📊 收到任务完成状态变化通知，刷新概述数据")
                 refreshData()
             }
         }
     }
     
     private func refreshData() {
+        print("🔄 刷新概述数据...")
         stats = dataManager.getDashboardStats()
         categoryExpenses = dataManager.getCategoryExpenses()
+        print("💰 当前总收入: ¥\(stats.totalIncome)")
+        print("💸 当前总支出: ¥\(stats.totalExpense)")
+        print("💰 当前余额: ¥\(stats.totalBalance)")
     }
 }
 

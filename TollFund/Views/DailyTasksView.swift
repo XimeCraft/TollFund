@@ -364,10 +364,17 @@ struct DailyTaskRow: View {
             task.isCompleted.toggle()
             if task.isCompleted {
                 task.completedDate = Date()
+                print("✅ 任务完成: \(task.title ?? "") - 奖励: ¥\(task.rewardAmount)")
             } else {
                 task.completedDate = nil
+                print("❌ 取消完成: \(task.title ?? "")")
             }
             dataManager.save()
+            
+            // 发送通知告知数据变化
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotificationCenter.default.post(name: NSNotification.Name("TaskCompletionChanged"), object: nil)
+            }
         }
     }
 }
