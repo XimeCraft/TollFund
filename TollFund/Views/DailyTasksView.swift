@@ -474,42 +474,46 @@ struct AddDailyTaskView: View {
                     PresetTaskButton(
                         title: "跑步30分钟",
                         type: .exercise,
-                        amount: 20
-                    ) { title, type, amount in
-                        self.title = title
-                        self.selectedTaskType = type
-                        self.rewardAmount = amount
-                    }
+                        amount: 20,
+                        onSelect: { title, type, amount in
+                            self.title = title
+                            self.selectedTaskType = type
+                            self.rewardAmount = amount
+                        }
+                    )
 
                     PresetTaskButton(
                         title: "阅读1小时",
                         type: .reading,
-                        amount: 15
-                    ) { title, type, amount in
-                        self.title = title
-                        self.selectedTaskType = type
-                        self.rewardAmount = amount
-                    }
+                        amount: 15,
+                        onSelect: { title, type, amount in
+                            self.title = title
+                            self.selectedTaskType = type
+                            self.rewardAmount = amount
+                        }
+                    )
 
                     PresetTaskButton(
-                        title: "冥想15分钟",
-                        type: .meditation,
-                        amount: 10
-                    ) { title, type, amount in
-                        self.title = title
-                        self.selectedTaskType = type
-                        self.rewardAmount = amount
-                    }
+                        title: "健康餐食",
+                        type: .health,
+                        amount: 10,
+                        onSelect: { title, type, amount in
+                            self.title = title
+                            self.selectedTaskType = type
+                            self.rewardAmount = amount
+                        }
+                    )
 
                     PresetTaskButton(
                         title: "学习2小时",
                         type: .study,
-                        amount: 30
-                    ) { title, type, amount in
-                        self.title = title
-                        self.selectedTaskType = type
-                        self.rewardAmount = amount
-                    }
+                        amount: 30,
+                        onSelect: { title, type, amount in
+                            self.title = title
+                            self.selectedTaskType = type
+                            self.rewardAmount = amount
+                        }
+                    )
                 }
             }
             .navigationTitle("添加每日任务")
