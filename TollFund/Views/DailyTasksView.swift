@@ -9,6 +9,7 @@ struct DailyTasksView: View {
     @State private var showingAddTask = false
     @State private var showingTaskConfig = false
     @State private var showingHistory = false
+    @State private var editingTask: DailyTask?
 
     // 使用 @FetchRequest 来自动监听数据变化
     @FetchRequest(
@@ -65,7 +66,10 @@ struct DailyTasksView: View {
                                     title: "固定任务",
                                     tasks: fixedTasks,
                                     icon: "pin.fill",
-                                    color: .blue
+                                    color: .blue,
+                                    onEditTask: { task in
+                                        editingTask = task
+                                    }
                                 )
                             }
 
@@ -75,7 +79,10 @@ struct DailyTasksView: View {
                                     title: "临时任务",
                                     tasks: tempTasks,
                                     icon: "plus.circle",
-                                    color: .green
+                                    color: .green,
+                                    onEditTask: { task in
+                                        editingTask = task
+                                    }
                                 )
                             }
                         }
@@ -99,6 +106,9 @@ struct DailyTasksView: View {
             }
             .sheet(isPresented: $showingHistory) {
                 TaskHistoryView()
+            }
+            .sheet(item: $editingTask) { task in
+                EditDailyTaskView(task: task)
             }
             .onAppear {
                 print("🚀 进入每日任务页面 - 选中日期: \(selectedDate)")
@@ -245,6 +255,7 @@ struct TaskSectionView: View {
     let tasks: [DailyTask]
     let icon: String
     let color: Color
+    let onEditTask: (DailyTask) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -265,7 +276,9 @@ struct TaskSectionView: View {
             }
 
             ForEach(tasks, id: \.id) { task in
-                DailyTaskRow(task: task)
+                DailyTaskRow(task: task, onEdit: {
+                    onEditTask(task)
+                })
             }
         }
         .padding()
@@ -281,6 +294,8 @@ struct DailyTaskRow: View {
     @ObservedObject var task: DailyTask
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var dataManager: PersistenceController
+    
+    let onEdit: (() -> Void)?
 
     var taskType: TaskType {
         TaskType(rawValue: task.taskType ?? "") ?? .other
@@ -339,6 +354,9 @@ struct DailyTaskRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        .onTapGesture {
+            onEdit?()
+        }
     }
 
     private func toggleCompletion() {
@@ -773,6 +791,7 @@ struct TaskHistoryView: View {
     @State private var selectedDate = Date()
     @State private var tasksForSelectedDate: [DailyTask] = []
     @State private var showingDatePicker = false
+    @State private var editingTask: DailyTask?
 
     var body: some View {
         NavigationView {
@@ -814,7 +833,9 @@ struct TaskHistoryView: View {
                 } else {
                     List {
                         ForEach(tasksForSelectedDate, id: \.id) { task in
-                            DailyTaskRow(task: task)
+                            DailyTaskRow(task: task, onEdit: {
+                                editingTask = task
+                            })
                         }
                     }
                     .listStyle(PlainListStyle())
@@ -831,6 +852,9 @@ struct TaskHistoryView: View {
             }
             .sheet(isPresented: $showingDatePicker) {
                 DatePickerSheet(selectedDate: $selectedDate, isPresented: $showingDatePicker)
+            }
+            .sheet(item: $editingTask) { task in
+                EditDailyTaskView(task: task)
             }
             .onAppear {
                 print("📚 进入历史记录页面")
@@ -1211,6 +1235,118 @@ struct EditFixedTaskTemplateView: View {
         template.rewardAmount = rewardAmount
         template.isActive = isActive
 
+        dataManager.save()
+        dismiss()
+    }
+}
+
+// MARK: - 编辑每日任务视图
+struct EditDailyTaskView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var dataManager: PersistenceController
+    
+    @ObservedObject var task: DailyTask
+    
+    @State private var title: String
+    @State private var selectedTaskType: TaskType
+    @State private var rewardAmount: Double
+    
+    init(task: DailyTask) {
+        self.task = task
+        self._title = State(initialValue: task.title ?? "")
+        self._selectedTaskType = State(initialValue: TaskType(rawValue: task.taskType ?? "") ?? .other)
+        self._rewardAmount = State(initialValue: task.rewardAmount)
+    }
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("任务信息") {
+                    TextField("任务标题", text: $title)
+                    
+                    Picker("任务类型", selection: $selectedTaskType) {
+                        ForEach(TaskType.allCases, id: \.self) { taskType in
+                            HStack {
+                                Image(systemName: taskType.icon)
+                                    .foregroundColor(taskType.color)
+                                Text(taskType.rawValue)
+                            }
+                            .tag(taskType)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    
+                    HStack {
+                        Text("奖励金额")
+                        Spacer()
+                        TextField("金额", value: $rewardAmount, format: .number)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                        Text("元")
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if task.isFixed {
+                    Section("固定任务说明") {
+                        Text("这是一个固定任务，修改金额只会影响今天的任务。如需永久修改，请前往任务配置。")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Section("任务状态") {
+                    HStack {
+                        Text("任务类型")
+                        Spacer()
+                        Text(task.isFixed ? "固定任务" : "临时任务")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("创建时间")
+                        Spacer()
+                        if let createdDate = task.createdDate {
+                            Text(createdDate, style: .date)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if task.isCompleted, let completedDate = task.completedDate {
+                        HStack {
+                            Text("完成时间")
+                            Spacer()
+                            Text(completedDate, style: .relative)
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("编辑任务")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        saveTask()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+    
+    private func saveTask() {
+        task.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        task.taskType = selectedTaskType.rawValue
+        task.rewardAmount = rewardAmount
+        
         dataManager.save()
         dismiss()
     }
