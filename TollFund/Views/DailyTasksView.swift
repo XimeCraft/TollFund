@@ -98,10 +98,7 @@ struct DailyTasksView: View {
                 if Calendar.current.isDateInToday(selectedDate) {
                     ensureDailyTasksExist(for: selectedDate)
                 }
-                // 确保UI显示最新的任务
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.loadTasksForDate(self.selectedDate)
-                }
+                // UI会通过计算属性自动更新，无需手动刷新
             }
             .onChange(of: selectedDate) { newDate in
                 ensureDailyTasksExist(for: newDate)
@@ -158,12 +155,8 @@ struct DailyTasksView: View {
             try viewContext.save()
             print("💾 固定任务数据已保存")
 
-            // 强制刷新UI
-            DispatchQueue.main.async {
-                // 重新加载当前日期的任务
-                self.loadTasksForDate(date)
-                print("🔄 UI已刷新")
-            }
+            // UI会通过计算属性自动刷新
+            print("💾 数据已保存，UI将自动刷新")
         } catch {
             print("❌ 保存固定任务数据失败: \(error)")
         }
