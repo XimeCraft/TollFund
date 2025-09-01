@@ -37,8 +37,8 @@ class PersistenceController: ObservableObject {
         // 添加一些预览的固定任务模板
         let fixedTemplate = FixedTaskTemplate(context: viewContext)
         fixedTemplate.id = UUID()
-        fixedTemplate.title = "每日冥想"
-        fixedTemplate.taskType = TaskType.meditation.rawValue
+        fixedTemplate.title = "健康生活"
+        fixedTemplate.taskType = TaskType.health.rawValue
         fixedTemplate.rewardAmount = 10
         fixedTemplate.isActive = true
 
