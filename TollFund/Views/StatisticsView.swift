@@ -9,6 +9,11 @@ struct StatisticsView: View {
     @State private var categoryExpenses: [CategoryExpense] = []
     @State private var monthlyData: [MonthlyData] = []
     
+    // 监听数据变化以自动刷新
+    @FetchRequest(entity: DailyTask.entity(), sortDescriptors: []) private var dailyTasks: FetchedResults<DailyTask>
+    @FetchRequest(entity: BigTask.entity(), sortDescriptors: []) private var bigTasks: FetchedResults<BigTask>
+    @FetchRequest(entity: Expense.entity(), sortDescriptors: []) private var expenses: FetchedResults<Expense>
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -39,6 +44,19 @@ struct StatisticsView: View {
                 refreshData()
             }
             .refreshable {
+                refreshData()
+            }
+            .onChange(of: dailyTasks.count) { _ in
+                refreshData()
+            }
+            .onChange(of: bigTasks.count) { _ in
+                refreshData()
+            }
+            .onChange(of: expenses.count) { _ in
+                refreshData()
+            }
+            // 监听任务完成状态变化
+            .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)) { _ in
                 refreshData()
             }
         }
