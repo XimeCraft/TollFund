@@ -3,34 +3,34 @@ import SwiftUI
 
 // MARK: - 任务类型枚举
 enum TaskType: String, CaseIterable {
-    case exercise = "运动"
-    case reading = "阅读"
-    case meditation = "冥想"
     case study = "学习"
-    case work = "工作"
+    case reading = "阅读"
+    case exercise = "运动"
     case health = "健康"
+    case hobby = "兴趣"
+    case leisure = "休闲"
     case other = "其他"
     
     var icon: String {
         switch self {
-        case .exercise: return "figure.run"
-        case .reading: return "book.fill"
-        case .meditation: return "leaf.fill"
         case .study: return "graduationcap.fill"
-        case .work: return "briefcase.fill"
+        case .reading: return "book.fill"
+        case .exercise: return "figure.run"
         case .health: return "heart.fill"
+        case .hobby: return "music.note"
+        case .leisure: return "gamecontroller.fill"
         case .other: return "star.fill"
         }
     }
     
     var color: Color {
         switch self {
-        case .exercise: return .orange
-        case .reading: return .blue
-        case .meditation: return .green
         case .study: return .purple
-        case .work: return .red
+        case .reading: return .blue
+        case .exercise: return .orange
         case .health: return .pink
+        case .hobby: return .green
+        case .leisure: return .cyan
         case .other: return .gray
         }
     }

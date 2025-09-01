@@ -642,176 +642,120 @@ struct EmptyStateView: View {
     }
 }
 
-// MARK: - 固定任务配置视图
+// MARK: - 简化的固定任务配置视图
 struct FixedTaskConfigView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var dataManager: PersistenceController
-
+    
     @FetchRequest(
         entity: FixedTaskTemplate.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \FixedTaskTemplate.title, ascending: true)],
-        animation: .default)
-    private var taskTemplates: FetchedResults<FixedTaskTemplate>
-
-    @State private var showingAddTemplate = false
-    @State private var editingTemplate: FixedTaskTemplate?
-
+        sortDescriptors: [NSSortDescriptor(keyPath: \FixedTaskTemplate.title, ascending: true)]
+    ) private var templates: FetchedResults<FixedTaskTemplate>
+    
+    // 预设的固定任务列表
+    private let defaultFixedTasks = [
+        ("12点前睡觉", "健康", 2.0),
+        ("外出不打车", "健康", 1.0),
+        ("午餐轻食", "健康", 5.0),
+        ("运动 > 30 mins", "运动", 5.0),
+        ("阅读 > 2页", "阅读", 5.0),
+        ("练习打鼓 > 30 mins", "兴趣", 2.0),
+        ("练习吉他 > 30 mins", "兴趣", 5.0),
+        ("记录新知识点", "学习", 5.0),
+        ("记录idea", "学习", 2.0),
+        ("爬楼梯 > 5层", "运动", 1.0)
+    ]
+    
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("固定任务模板")) {
-                    if taskTemplates.isEmpty {
-                        VStack(spacing: 12) {
-                            Image(systemName: "doc.text.magnifyingglass")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
-
-                            Text("还没有固定任务模板")
+                Section(header: Text("固定任务列表")) {
+                    ForEach(defaultFixedTasks, id: \.0) { task in
+                        let (title, category, amount) = task
+                        let isActive = getTaskActiveStatus(title: title)
+                        
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(title)
+                                    .font(.body)
+                                Text(category)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text("¥\(amount, specifier: "%.0f")")
                                 .font(.headline)
-                                .foregroundColor(.secondary)
-
-                            Text("点击下方预设模板快速添加，或使用右上角 + 按钮创建自定义模板")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: 200)
-                        .listRowBackground(Color.clear)
-                    } else {
-                        ForEach(taskTemplates, id: \.id) { template in
-                            FixedTaskTemplateRow(template: template) {
-                                editingTemplate = template
-                            }
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    deleteTemplate(template)
-                                } label: {
-                                    Label("删除", systemImage: "trash")
+                                .foregroundColor(.green)
+                            
+                            Toggle("", isOn: Binding(
+                                get: { isActive },
+                                set: { newValue in
+                                    toggleTask(title: title, category: category, amount: amount, isActive: newValue)
                                 }
-                            }
+                            ))
+                            .labelsHidden()
                         }
+                        .padding(.vertical, 4)
                     }
                 }
-
-                Section(header: Text("预设模板")) {
-                    PresetTemplateButton(
-                        title: "跑步30分钟",
-                        type: .exercise,
-                        amount: 20
-                    ) { title, type, amount in
-                        addPresetTemplate(title: title, type: type, amount: amount)
-                    }
-
-                    PresetTemplateButton(
-                        title: "阅读1小时",
-                        type: .reading,
-                        amount: 15
-                    ) { title, type, amount in
-                        addPresetTemplate(title: title, type: type, amount: amount)
-                    }
-
-                    PresetTemplateButton(
-                        title: "冥想15分钟",
-                        type: .meditation,
-                        amount: 10
-                    ) { title, type, amount in
-                        addPresetTemplate(title: title, type: type, amount: amount)
-                    }
-
-                    PresetTemplateButton(
-                        title: "学习2小时",
-                        type: .study,
-                        amount: 30
-                    ) { title, type, amount in
-                        addPresetTemplate(title: title, type: type, amount: amount)
-                    }
+                
+                Section(footer: Text("开启的固定任务将每天自动生成，您可以随时开启或关闭。")) {
+                    EmptyView()
                 }
             }
             .navigationTitle("固定任务配置")
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                createDefaultTemplatesIfNeeded()
-            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("完成") {
                         dismiss()
                     }
                 }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddTemplate = true }) {
-                        Image(systemName: "plus")
-                    }
-                }
             }
-            .sheet(isPresented: $showingAddTemplate) {
-                AddFixedTaskTemplateView()
-            }
-            .sheet(item: $editingTemplate) { template in
-                EditFixedTaskTemplateView(template: template)
+            .onAppear {
+                createDefaultTemplatesIfNeeded()
             }
         }
     }
-
-    private func deleteTemplate(_ template: FixedTaskTemplate) {
-        viewContext.delete(template)
-        dataManager.save()
+    
+    // 获取任务的激活状态
+    private func getTaskActiveStatus(title: String) -> Bool {
+        return templates.first { $0.title == title }?.isActive ?? false
     }
-
-    private func createDefaultTemplatesIfNeeded() {
-        let fetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
-
-        guard let existingTemplates = try? viewContext.fetch(fetch) else {
-            print("❌ 无法检查现有模板")
-            return
-        }
-
-        if existingTemplates.isEmpty {
-            print("📋 创建默认固定任务模板...")
-
-            // 创建一些默认的固定任务模板
-            let defaultTemplates = [
-                ("每日冥想", TaskType.meditation, 10.0),
-                ("晨间阅读", TaskType.reading, 15.0),
-                ("健康早餐", TaskType.health, 5.0),
-                ("学习计划", TaskType.study, 25.0)
-            ]
-
-            for (title, type, amount) in defaultTemplates {
-                let template = FixedTaskTemplate(context: viewContext)
-                template.id = UUID()
-                template.title = title
-                template.taskType = type.rawValue
-                template.rewardAmount = amount
-                template.isActive = true
-                print("✅ 创建默认模板: \(title)")
-            }
-
-            do {
-                try viewContext.save()
-                print("💾 默认模板已保存")
-            } catch {
-                print("❌ 保存默认模板失败: \(error)")
-            }
-        } else {
-            print("📋 已存在 \(existingTemplates.count) 个模板")
-        }
-    }
-
-    private func addPresetTemplate(title: String, type: TaskType, amount: Double) {
-        let fetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
-        fetch.predicate = NSPredicate(format: "title == %@", title)
-
-        if let existing = try? viewContext.fetch(fetch), existing.isEmpty {
+    
+    // 切换任务的激活状态
+    private func toggleTask(title: String, category: String, amount: Double, isActive: Bool) {
+        if let existingTemplate = templates.first(where: { $0.title == title }) {
+            existingTemplate.isActive = isActive
+        } else if isActive {
+            // 创建新的模板
             let template = FixedTaskTemplate(context: viewContext)
             template.id = UUID()
             template.title = title
-            template.taskType = type.rawValue
+            template.taskType = category
             template.rewardAmount = amount
             template.isActive = true
+        }
+        dataManager.save()
+    }
+    
+    // 创建默认模板（仅在首次使用时）
+    private func createDefaultTemplatesIfNeeded() {
+        // 只在完全没有模板时才创建，避免重复创建
+        if templates.isEmpty {
+            // 默认激活前3个任务作为示例
+            for (index, task) in defaultFixedTasks.prefix(3).enumerated() {
+                let (title, category, amount) = task
+                let template = FixedTaskTemplate(context: viewContext)
+                template.id = UUID()
+                template.title = title
+                template.taskType = category
+                template.rewardAmount = amount
+                template.isActive = true
+            }
             dataManager.save()
         }
     }
@@ -835,8 +779,8 @@ struct TaskHistoryView: View {
                 }) {
                     HStack {
                         Text(formattedDate(selectedDate))
-                            .font(.title2)
-                            .fontWeight(.medium)
+                            .font(.body)
+                            .fontWeight(.regular)
                             .foregroundColor(.primary)
 
                         Spacer()
