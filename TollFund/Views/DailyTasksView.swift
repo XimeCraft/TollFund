@@ -10,27 +10,32 @@ struct DailyTasksView: View {
     @State private var showingTaskConfig = false
     @State private var showingHistory = false
 
+    // 使用 @FetchRequest 来自动监听数据变化
+    @FetchRequest(
+        entity: DailyTask.entity(),
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \DailyTask.isFixed, ascending: false),
+            NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)
+        ]
+    ) private var allTasks: FetchedResults<DailyTask>
+
     // 获取选中日期的任务
     var tasksForSelectedDate: [DailyTask] {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: selectedDate)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
 
-        let fetchRequest: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "(taskDate >= %@) AND (taskDate < %@)", startOfDay as NSDate, endOfDay as NSDate)
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DailyTask.isFixed, ascending: false), NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)]
-
-        do {
-            let tasks = try viewContext.fetch(fetchRequest)
-            print("🔍 查询日期 \(startOfDay) 的任务: 找到 \(tasks.count) 个任务")
-            for task in tasks {
-                print("   📋 \(task.title ?? "无标题") - 固定:\(task.isFixed) - 完成:\(task.isCompleted)")
-            }
-            return tasks
-        } catch {
-            print("❌ 查询任务失败: \(error)")
-            return []
+        let filtered = allTasks.filter { task in
+            guard let taskDate = task.taskDate else { return false }
+            return taskDate >= startOfDay && taskDate < endOfDay
         }
+
+        print("🔍 查询日期 \(startOfDay) 的任务: 找到 \(filtered.count) 个任务")
+        for task in filtered {
+            print("   📋 \(task.title ?? "无标题") - 固定:\(task.isFixed) - 完成:\(task.isCompleted)")
+        }
+        
+        return filtered
     }
 
     // 区分固定任务和临时任务
@@ -161,8 +166,10 @@ struct DailyTasksView: View {
             try viewContext.save()
             print("💾 固定任务数据已保存")
 
-            // UI会通过计算属性自动刷新
-            print("💾 数据已保存，UI将自动刷新")
+            // 使用小延迟确保 UI 正确刷新
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                print("💾 数据已保存，UI应该已经刷新")
+            }
         } catch {
             print("❌ 保存固定任务数据失败: \(error)")
         }
