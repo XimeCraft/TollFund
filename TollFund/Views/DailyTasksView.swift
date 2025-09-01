@@ -21,9 +21,14 @@ struct DailyTasksView: View {
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DailyTask.isFixed, ascending: false), NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)]
 
         do {
-            return try viewContext.fetch(fetchRequest)
+            let tasks = try viewContext.fetch(fetchRequest)
+            print("🔍 查询日期 \(startOfDay) 的任务: 找到 \(tasks.count) 个任务")
+            for task in tasks {
+                print("   📋 \(task.title ?? "无标题") - 固定:\(task.isFixed) - 完成:\(task.isCompleted)")
+            }
+            return tasks
         } catch {
-            print("Error fetching tasks: \(error)")
+            print("❌ 查询任务失败: \(error)")
             return []
         }
     }
@@ -91,13 +96,9 @@ struct DailyTasksView: View {
                 TaskHistoryView()
             }
             .onAppear {
-                print("🚀 进入每日任务页面")
-                // 确保今日的固定任务存在
-                ensureDailyTasksExist(for: Date())
-                // 如果选择的是今天，也要确保任务存在
-                if Calendar.current.isDateInToday(selectedDate) {
-                    ensureDailyTasksExist(for: selectedDate)
-                }
+                print("🚀 进入每日任务页面 - 选中日期: \(selectedDate)")
+                // 确保选中日期的固定任务存在
+                ensureDailyTasksExist(for: selectedDate)
                 // UI会通过计算属性自动更新，无需手动刷新
             }
             .onChange(of: selectedDate) { newDate in
@@ -111,6 +112,8 @@ struct DailyTasksView: View {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
 
+        print("🔄 开始确保日期 \(startOfDay) 的固定任务存在")
+
         // 获取所有活跃的固定任务模板
         let templateFetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
         templateFetch.predicate = NSPredicate(format: "isActive == YES")
@@ -121,6 +124,9 @@ struct DailyTasksView: View {
         }
 
         print("📋 找到 \(templates.count) 个活跃的固定任务模板")
+        for template in templates {
+            print("   📝 模板: \(template.title ?? "无标题") - 活跃:\(template.isActive)")
+        }
 
         // 为每个模板检查是否已有对应日期的任务
         for template in templates {
