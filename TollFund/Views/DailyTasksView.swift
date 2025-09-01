@@ -209,12 +209,15 @@ struct DailyTasksView: View {
     
     // 智能删除任务（根据任务类型决定是否需要确认）
     private func handleDeleteTask(_ task: DailyTask) {
+        print("🗑️ 准备删除任务: \(task.title ?? "") - 是否固定: \(task.isFixed)")
         if task.isFixed {
             // 固定任务需要确认
+            print("📋 固定任务，显示确认对话框")
             taskToDelete = task
             showingDeleteConfirmation = true
         } else {
             // 临时任务直接删除
+            print("📋 临时任务，直接删除")
             deleteTaskDirectly(task)
         }
     }
@@ -1323,12 +1326,14 @@ struct EditDailyTaskView: View {
     @State private var title: String
     @State private var selectedTaskType: TaskType
     @State private var rewardAmount: Double
+    @State private var isFixed: Bool
     
     init(task: DailyTask) {
         self.task = task
         self._title = State(initialValue: task.title ?? "")
         self._selectedTaskType = State(initialValue: TaskType(rawValue: task.taskType ?? "") ?? .other)
         self._rewardAmount = State(initialValue: task.rewardAmount)
+        self._isFixed = State(initialValue: task.isFixed)
     }
     
     var body: some View {
@@ -1371,8 +1376,12 @@ struct EditDailyTaskView: View {
                     HStack {
                         Text("任务类型")
                         Spacer()
-                        Text(task.isFixed ? "固定任务" : "临时任务")
-                            .foregroundColor(.secondary)
+                        Picker("", selection: $isFixed) {
+                            Text("临时任务").tag(false)
+                            Text("固定任务").tag(true)
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .labelsHidden()
                     }
                     
                     HStack {
@@ -1417,8 +1426,14 @@ struct EditDailyTaskView: View {
         task.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         task.taskType = selectedTaskType.rawValue
         task.rewardAmount = rewardAmount
+        task.isFixed = isFixed
         
-        dataManager.save()
+        do {
+            try viewContext.save()
+            print("✅ 任务编辑保存成功")
+        } catch {
+            print("❌ 保存任务编辑失败: \(error)")
+        }
         dismiss()
     }
 }
