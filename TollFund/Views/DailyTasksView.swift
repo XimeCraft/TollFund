@@ -817,15 +817,10 @@ struct TaskHistoryView: View {
             }
             .onAppear {
                 print("📚 进入历史记录页面")
-                ensureDailyTasksExist(for: selectedDate) // 先确保固定任务存在
-                // 稍等一下确保任务生成完成，然后加载
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    self.loadTasksForDate(self.selectedDate)
-                }
+                ensureTasksExistForDate(selectedDate)
             }
             .onChange(of: selectedDate) { newDate in
-                ensureDailyTasksExist(for: newDate) // 切换日期时也要确保固定任务存在
-                loadTasksForDate(newDate)
+                ensureTasksExistForDate(newDate)
             }
         }
     }
@@ -835,6 +830,64 @@ struct TaskHistoryView: View {
         formatter.dateFormat = "yyyy年MM月dd日 EEEE"
         formatter.locale = Locale(identifier: "zh_CN")
         return formatter.string(from: date)
+    }
+
+    private func ensureTasksExistForDate(_ date: Date) {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+
+        // 获取所有活跃的固定任务模板
+        let templateFetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
+        templateFetch.predicate = NSPredicate(format: "isActive == YES")
+
+        guard let templates = try? viewContext.fetch(templateFetch) else {
+            print("❌ 无法获取固定任务模板")
+            return
+        }
+
+        print("📋 找到 \(templates.count) 个活跃的固定任务模板")
+
+        // 为每个模板检查是否已有对应日期的任务
+        for template in templates {
+            let taskFetch: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
+            taskFetch.predicate = NSPredicate(format: "isFixed == YES AND taskDate == %@ AND title == %@", startOfDay as NSDate, template.title ?? "")
+
+            do {
+                let existingTasks = try viewContext.fetch(taskFetch)
+                if existingTasks.isEmpty {
+                    // 创建新的固定任务
+                    print("➕ 为日期 \(startOfDay) 创建固定任务: \(template.title ?? "")")
+                    let newTask = DailyTask(context: viewContext)
+                    newTask.id = UUID()
+                    newTask.title = template.title
+                    newTask.taskType = template.taskType
+                    newTask.rewardAmount = template.rewardAmount
+                    newTask.originalRewardAmount = template.rewardAmount
+                    newTask.isFixed = true
+                    newTask.isCompleted = false
+                    newTask.taskDate = startOfDay
+                    newTask.createdDate = Date()
+                } else {
+                    print("✅ 固定任务已存在: \(template.title ?? "")")
+                }
+            } catch {
+                print("❌ 检查固定任务时出错: \(error)")
+            }
+        }
+
+        // 保存更改并刷新UI
+        do {
+            try viewContext.save()
+            print("💾 固定任务数据已保存")
+
+            // 强制刷新UI
+            DispatchQueue.main.async {
+                self.loadTasksForDate(date)
+                print("🔄 UI已刷新")
+            }
+        } catch {
+            print("❌ 保存固定任务数据失败: \(error)")
+        }
     }
 
     private func loadTasksForDate(_ date: Date) {
