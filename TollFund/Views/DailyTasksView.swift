@@ -91,11 +91,16 @@ struct DailyTasksView: View {
                 TaskHistoryView()
             }
             .onAppear {
+                print("🚀 进入每日任务页面")
                 // 确保今日的固定任务存在
                 ensureDailyTasksExist(for: Date())
                 // 如果选择的是今天，也要确保任务存在
                 if Calendar.current.isDateInToday(selectedDate) {
                     ensureDailyTasksExist(for: selectedDate)
+                }
+                // 确保UI显示最新的任务
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.loadTasksForDate(self.selectedDate)
                 }
             }
             .onChange(of: selectedDate) { newDate in
@@ -148,10 +153,17 @@ struct DailyTasksView: View {
             }
         }
 
-        // 保存更改
+        // 保存更改并刷新UI
         do {
             try viewContext.save()
             print("💾 固定任务数据已保存")
+
+            // 强制刷新UI
+            DispatchQueue.main.async {
+                // 重新加载当前日期的任务
+                self.loadTasksForDate(date)
+                print("🔄 UI已刷新")
+            }
         } catch {
             print("❌ 保存固定任务数据失败: \(error)")
         }
@@ -804,9 +816,15 @@ struct TaskHistoryView: View {
                 DatePickerSheet(selectedDate: $selectedDate, isPresented: $showingDatePicker)
             }
             .onAppear {
-                loadTasksForDate(selectedDate)
+                print("📚 进入历史记录页面")
+                ensureDailyTasksExist(for: selectedDate) // 先确保固定任务存在
+                // 稍等一下确保任务生成完成，然后加载
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.loadTasksForDate(self.selectedDate)
+                }
             }
             .onChange(of: selectedDate) { newDate in
+                ensureDailyTasksExist(for: newDate) // 切换日期时也要确保固定任务存在
                 loadTasksForDate(newDate)
             }
         }
@@ -828,8 +846,16 @@ struct TaskHistoryView: View {
         fetchRequest.predicate = NSPredicate(format: "(taskDate >= %@) AND (taskDate < %@)", startOfDay as NSDate, endOfDay as NSDate)
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DailyTask.isFixed, ascending: false), NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)]
 
-        if let tasks = try? viewContext.fetch(fetchRequest) {
+        do {
+            let tasks = try viewContext.fetch(fetchRequest)
             tasksForSelectedDate = tasks
+            print("📅 加载日期 \(startOfDay) 的任务: \(tasks.count) 个任务")
+            for task in tasks {
+                print("   - \(task.title ?? "") (\(task.isFixed ? "固定" : "临时"))")
+            }
+        } catch {
+            print("❌ 加载任务失败: \(error)")
+            tasksForSelectedDate = []
         }
     }
 }
