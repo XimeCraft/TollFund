@@ -11,6 +11,8 @@ struct DailyTasksView: View {
     @State private var showingTaskConfig = false
     @State private var showingHistory = false
     @State private var editingTask: DailyTask?
+    @State private var taskToDelete: DailyTask?
+    @State private var showingDeleteConfirmation = false
 
     // 使用 @FetchRequest 来自动监听数据变化
     @FetchRequest(
@@ -72,7 +74,7 @@ struct DailyTasksView: View {
                                         editingTask = task
                                     },
                                     onDeleteTask: { task in
-                                        deleteTask(task)
+                                        handleDeleteTask(task)
                                     }
                                 )
                             }
@@ -88,7 +90,7 @@ struct DailyTasksView: View {
                                         editingTask = task
                                     },
                                     onDeleteTask: { task in
-                                        deleteTask(task)
+                                        handleDeleteTask(task)
                                     }
                                 )
                             }
@@ -125,6 +127,19 @@ struct DailyTasksView: View {
             }
             .onChange(of: selectedDate) { newDate in
                 ensureDailyTasksExist(for: newDate)
+            }
+            .alert("确认删除", isPresented: $showingDeleteConfirmation) {
+                Button("取消", role: .cancel) {
+                    taskToDelete = nil
+                }
+                Button("删除", role: .destructive) {
+                    if let task = taskToDelete {
+                        deleteTaskDirectly(task)
+                        taskToDelete = nil
+                    }
+                }
+            } message: {
+                Text("确定要删除该固定任务吗？删除后该任务将不再出现在每日任务清单中，但历史记录保留。")
             }
         }
     }
@@ -192,10 +207,22 @@ struct DailyTasksView: View {
         }
     }
     
-    // 删除任务
-    private func deleteTask(_ task: DailyTask) {
+    // 智能删除任务（根据任务类型决定是否需要确认）
+    private func handleDeleteTask(_ task: DailyTask) {
+        if task.isFixed {
+            // 固定任务需要确认
+            taskToDelete = task
+            showingDeleteConfirmation = true
+        } else {
+            // 临时任务直接删除
+            deleteTaskDirectly(task)
+        }
+    }
+    
+    // 直接删除任务
+    private func deleteTaskDirectly(_ task: DailyTask) {
         withAnimation {
-            print("🗑️ 删除任务: \(task.title ?? "")")
+            print("🗑️ 删除任务: \(task.title ?? "") - 类型: \(task.isFixed ? "固定" : "临时")")
             viewContext.delete(task)
             
             do {
@@ -1310,7 +1337,7 @@ struct EditDailyTaskView: View {
                 Section("任务信息") {
                     TextField("任务标题", text: $title)
                     
-                    Picker("任务类型", selection: $selectedTaskType) {
+                    Picker("类型", selection: $selectedTaskType) {
                         ForEach(TaskType.allCases, id: \.self) { taskType in
                             HStack {
                                 Image(systemName: taskType.icon)
