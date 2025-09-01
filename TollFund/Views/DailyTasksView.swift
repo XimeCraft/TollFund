@@ -1,3 +1,4 @@
+
 import SwiftUI
 import CoreData
 
@@ -69,6 +70,9 @@ struct DailyTasksView: View {
                                     color: .blue,
                                     onEditTask: { task in
                                         editingTask = task
+                                    },
+                                    onDeleteTask: { task in
+                                        deleteTask(task)
                                     }
                                 )
                             }
@@ -82,6 +86,9 @@ struct DailyTasksView: View {
                                     color: .green,
                                     onEditTask: { task in
                                         editingTask = task
+                                    },
+                                    onDeleteTask: { task in
+                                        deleteTask(task)
                                     }
                                 )
                             }
@@ -184,6 +191,21 @@ struct DailyTasksView: View {
             print("❌ 保存固定任务数据失败: \(error)")
         }
     }
+    
+    // 删除任务
+    private func deleteTask(_ task: DailyTask) {
+        withAnimation {
+            print("🗑️ 删除任务: \(task.title ?? "")")
+            viewContext.delete(task)
+            
+            do {
+                try viewContext.save()
+                print("💾 任务删除成功")
+            } catch {
+                print("❌ 删除任务失败: \(error)")
+            }
+        }
+    }
 }
 
 // MARK: - 日期选择器视图
@@ -256,6 +278,7 @@ struct TaskSectionView: View {
     let icon: String
     let color: Color
     let onEditTask: (DailyTask) -> Void
+    let onDeleteTask: (DailyTask) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -279,6 +302,11 @@ struct TaskSectionView: View {
                 DailyTaskRow(task: task, onEdit: {
                     onEditTask(task)
                 })
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    onDeleteTask(tasks[index])
+                }
             }
         }
         .padding()
@@ -1290,7 +1318,6 @@ struct EditDailyTaskView: View {
                             .tag(taskType)
                         }
                     }
-                    .pickerStyle(MenuPickerStyle())
                     
                     HStack {
                         Text("奖励金额")
