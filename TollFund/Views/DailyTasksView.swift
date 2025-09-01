@@ -648,15 +648,35 @@ struct FixedTaskConfigView: View {
         NavigationView {
             List {
                 Section(header: Text("固定任务模板")) {
-                    ForEach(taskTemplates, id: \.id) { template in
-                        FixedTaskTemplateRow(template: template) {
-                            editingTemplate = template
+                    if taskTemplates.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .font(.system(size: 40))
+                                .foregroundColor(.secondary)
+
+                            Text("还没有固定任务模板")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+
+                            Text("点击下方预设模板快速添加，或使用右上角 + 按钮创建自定义模板")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
                         }
-                        .swipeActions {
-                            Button(role: .destructive) {
-                                deleteTemplate(template)
-                            } label: {
-                                Label("删除", systemImage: "trash")
+                        .frame(maxWidth: .infinity, maxHeight: 200)
+                        .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(taskTemplates, id: \.id) { template in
+                            FixedTaskTemplateRow(template: template) {
+                                editingTemplate = template
+                            }
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    deleteTemplate(template)
+                                } label: {
+                                    Label("删除", systemImage: "trash")
+                                }
                             }
                         }
                     }
@@ -698,6 +718,9 @@ struct FixedTaskConfigView: View {
             }
             .navigationTitle("固定任务配置")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                createDefaultTemplatesIfNeeded()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("完成") {
@@ -723,6 +746,46 @@ struct FixedTaskConfigView: View {
     private func deleteTemplate(_ template: FixedTaskTemplate) {
         viewContext.delete(template)
         dataManager.save()
+    }
+
+    private func createDefaultTemplatesIfNeeded() {
+        let fetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
+
+        guard let existingTemplates = try? viewContext.fetch(fetch) else {
+            print("❌ 无法检查现有模板")
+            return
+        }
+
+        if existingTemplates.isEmpty {
+            print("📋 创建默认固定任务模板...")
+
+            // 创建一些默认的固定任务模板
+            let defaultTemplates = [
+                ("每日冥想", TaskType.meditation, 10.0),
+                ("晨间阅读", TaskType.reading, 15.0),
+                ("健康早餐", TaskType.health, 5.0),
+                ("学习计划", TaskType.study, 25.0)
+            ]
+
+            for (title, type, amount) in defaultTemplates {
+                let template = FixedTaskTemplate(context: viewContext)
+                template.id = UUID()
+                template.title = title
+                template.taskType = type.rawValue
+                template.rewardAmount = amount
+                template.isActive = true
+                print("✅ 创建默认模板: \(title)")
+            }
+
+            do {
+                try viewContext.save()
+                print("💾 默认模板已保存")
+            } catch {
+                print("❌ 保存默认模板失败: \(error)")
+            }
+        } else {
+            print("📋 已存在 \(existingTemplates.count) 个模板")
+        }
     }
 
     private func addPresetTemplate(title: String, type: TaskType, amount: Double) {
