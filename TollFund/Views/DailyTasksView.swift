@@ -91,7 +91,12 @@ struct DailyTasksView: View {
                 TaskHistoryView()
             }
             .onAppear {
-                ensureDailyTasksExist(for: selectedDate)
+                // 确保今日的固定任务存在
+                ensureDailyTasksExist(for: Date())
+                // 如果选择的是今天，也要确保任务存在
+                if Calendar.current.isDateInToday(selectedDate) {
+                    ensureDailyTasksExist(for: selectedDate)
+                }
             }
             .onChange(of: selectedDate) { newDate in
                 ensureDailyTasksExist(for: newDate)
@@ -108,29 +113,48 @@ struct DailyTasksView: View {
         let templateFetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
         templateFetch.predicate = NSPredicate(format: "isActive == YES")
 
-        guard let templates = try? viewContext.fetch(templateFetch) else { return }
+        guard let templates = try? viewContext.fetch(templateFetch) else {
+            print("❌ 无法获取固定任务模板")
+            return
+        }
+
+        print("📋 找到 \(templates.count) 个活跃的固定任务模板")
 
         // 为每个模板检查是否已有对应日期的任务
         for template in templates {
             let taskFetch: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
             taskFetch.predicate = NSPredicate(format: "isFixed == YES AND taskDate == %@ AND title == %@", startOfDay as NSDate, template.title ?? "")
 
-            if let existingTasks = try? viewContext.fetch(taskFetch), existingTasks.isEmpty {
-                // 创建新的固定任务
-                let newTask = DailyTask(context: viewContext)
-                newTask.id = UUID()
-                newTask.title = template.title
-                newTask.taskType = template.taskType
-                newTask.rewardAmount = template.rewardAmount
-                newTask.originalRewardAmount = template.rewardAmount
-                newTask.isFixed = true
-                newTask.isCompleted = false
-                newTask.taskDate = startOfDay
-                newTask.createdDate = Date()
+            do {
+                let existingTasks = try viewContext.fetch(taskFetch)
+                if existingTasks.isEmpty {
+                    // 创建新的固定任务
+                    print("➕ 为日期 \(startOfDay) 创建固定任务: \(template.title ?? "")")
+                    let newTask = DailyTask(context: viewContext)
+                    newTask.id = UUID()
+                    newTask.title = template.title
+                    newTask.taskType = template.taskType
+                    newTask.rewardAmount = template.rewardAmount
+                    newTask.originalRewardAmount = template.rewardAmount
+                    newTask.isFixed = true
+                    newTask.isCompleted = false
+                    newTask.taskDate = startOfDay
+                    newTask.createdDate = Date()
+                } else {
+                    print("✅ 固定任务已存在: \(template.title ?? "")")
+                }
+            } catch {
+                print("❌ 检查固定任务时出错: \(error)")
             }
         }
 
-        dataManager.save()
+        // 保存更改
+        do {
+            try viewContext.save()
+            print("💾 固定任务数据已保存")
+        } catch {
+            print("❌ 保存固定任务数据失败: \(error)")
+        }
     }
 }
 
@@ -719,18 +743,33 @@ struct TaskHistoryView: View {
 
     @State private var selectedDate = Date()
     @State private var tasksForSelectedDate: [DailyTask] = []
+    @State private var showingDatePicker = false
 
     var body: some View {
         NavigationView {
             VStack {
-                DatePicker(
-                    "选择日期",
-                    selection: $selectedDate,
-                    in: ...Date(),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .padding()
+                // 只显示选中的日期，点击后弹出日历选择器
+                Button(action: {
+                    showingDatePicker = true
+                }) {
+                    HStack {
+                        Text(formattedDate(selectedDate))
+                            .font(.title2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+
+                        Spacer()
+
+                        Image(systemName: "calendar")
+                            .foregroundColor(.blue)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.ultraThinMaterial)
+                    )
+                    .padding(.horizontal)
+                }
 
                 if tasksForSelectedDate.isEmpty {
                     VStack(spacing: 16) {
@@ -761,6 +800,9 @@ struct TaskHistoryView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingDatePicker) {
+                DatePickerSheet(selectedDate: $selectedDate, isPresented: $showingDatePicker)
+            }
             .onAppear {
                 loadTasksForDate(selectedDate)
             }
@@ -768,6 +810,13 @@ struct TaskHistoryView: View {
                 loadTasksForDate(newDate)
             }
         }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年MM月dd日 EEEE"
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: date)
     }
 
     private func loadTasksForDate(_ date: Date) {
@@ -781,6 +830,47 @@ struct TaskHistoryView: View {
 
         if let tasks = try? viewContext.fetch(fetchRequest) {
             tasksForSelectedDate = tasks
+        }
+    }
+}
+
+// MARK: - 日期选择器弹窗
+struct DatePickerSheet: View {
+    @Binding var selectedDate: Date
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                Text("选择日期")
+                    .font(.headline)
+                    .padding()
+
+                DatePicker(
+                    "",
+                    selection: $selectedDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .padding()
+
+                Spacer()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("取消") {
+                        isPresented = false
+                    }
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("确定") {
+                        isPresented = false
+                    }
+                }
+            }
         }
     }
 }
