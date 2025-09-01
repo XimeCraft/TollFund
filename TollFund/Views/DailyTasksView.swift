@@ -433,7 +433,7 @@ struct AddDailyTaskView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("任务信息")) {
+                Section("任务信息") {
                     TextField("任务标题", text: $title)
 
                     Picker("任务类型", selection: $selectedTaskType) {
@@ -463,14 +463,14 @@ struct AddDailyTaskView: View {
                 }
 
                 if isFixed {
-                    Section(header: Text("固定任务说明")) {
+                    Section("固定任务说明") {
                         Text("固定任务将每天自动生成，您可以在任务配置中管理所有固定任务。")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
 
-                Section(header: Text("预设任务")) {
+                Section("预设任务") {
                     PresetTaskButton(
                         title: "跑步30分钟",
                         type: .exercise,
@@ -670,7 +670,7 @@ struct FixedTaskConfigView: View {
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("固定任务列表")) {
+                Section("固定任务列表") {
                     ForEach(defaultFixedTasks, id: \.0) { task in
                         let (title, category, amount) = task
                         let isActive = getTaskActiveStatus(title: title)
@@ -747,7 +747,7 @@ struct FixedTaskConfigView: View {
         // 只在完全没有模板时才创建，避免重复创建
         if templates.isEmpty {
             // 默认激活前3个任务作为示例
-            for (index, task) in defaultFixedTasks.prefix(3).enumerated() {
+            for task in defaultFixedTasks.prefix(3) {
                 let (title, category, amount) = task
                 let template = FixedTaskTemplate(context: viewContext)
                 template.id = UUID()
@@ -1071,7 +1071,7 @@ struct AddFixedTaskTemplateView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("模板信息")) {
+                Section("模板信息") {
                     TextField("任务标题", text: $title)
 
                     Picker("任务类型", selection: $selectedTaskType) {
@@ -1152,7 +1152,7 @@ struct EditFixedTaskTemplateView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("模板信息")) {
+                Section("模板信息") {
                     TextField("任务标题", text: $title)
 
                     Picker("任务类型", selection: $selectedTaskType) {
