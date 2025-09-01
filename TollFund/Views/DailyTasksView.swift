@@ -369,10 +369,18 @@ struct DailyTaskRow: View {
                 task.completedDate = nil
                 print("❌ 取消完成: \(task.title ?? "")")
             }
-            dataManager.save()
+            
+            // 直接使用 viewContext 保存
+            do {
+                try viewContext.save()
+                print("💾 任务状态已保存到数据库")
+            } catch {
+                print("❌ 保存任务状态失败: \(error)")
+            }
             
             // 发送通知告知数据变化
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                print("📢 发送任务完成状态变化通知")
                 NotificationCenter.default.post(name: NSNotification.Name("TaskCompletionChanged"), object: nil)
             }
         }

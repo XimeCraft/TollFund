@@ -133,12 +133,22 @@ class PersistenceController: ObservableObject {
         let completedDailyTasks = (try? context.fetch(dailyTaskFetch)) ?? []
         let dailyIncome = completedDailyTasks.reduce(0) { $0 + $1.rewardAmount }
         
+        print("💰 查询已完成的每日任务: \(completedDailyTasks.count) 个")
+        for task in completedDailyTasks {
+            print("   ✅ \(task.title ?? "无标题") - ¥\(task.rewardAmount) - 完成时间: \(task.completedDate?.description ?? "无")")
+        }
+        print("💰 每日任务总收入: ¥\(dailyIncome)")
+        
         // 计算已完成的大任务收入
         let bigTaskFetch: NSFetchRequest<BigTask> = BigTask.fetchRequest()
         bigTaskFetch.predicate = NSPredicate(format: "status == %@", BigTaskStatus.completed.rawValue)
         
         let completedBigTasks = (try? context.fetch(bigTaskFetch)) ?? []
         let bigTaskIncome = completedBigTasks.reduce(0) { $0 + $1.rewardAmount }
+        
+        print("💰 查询已完成的大任务: \(completedBigTasks.count) 个")
+        print("💰 大任务总收入: ¥\(bigTaskIncome)")
+        print("💰 总收入: ¥\(dailyIncome + bigTaskIncome)")
         
         return dailyIncome + bigTaskIncome
     }
