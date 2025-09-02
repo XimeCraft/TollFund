@@ -22,6 +22,8 @@ class PersistenceController: ObservableObject {
         bigTask.title = "完成Swift学习课程"
         bigTask.taskDescription = "学习完整的Swift编程语言课程"
         bigTask.rewardAmount = 500
+        bigTask.category = "学习"
+        bigTask.subcategory = "lecture"
         bigTask.status = BigTaskStatus.inProgress.rawValue
         bigTask.createdDate = Date()
         bigTask.targetDate = Calendar.current.date(byAdding: .month, value: 1, to: Date())
@@ -66,15 +68,23 @@ class PersistenceController: ObservableObject {
         }
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
+                print("Core Data error: \(error), \(error.userInfo)")
+                print("Error code: \(error.code)")
+                print("Error domain: \(error.domain)")
+                
                 // 如果是迁移错误，尝试删除旧数据库并重新创建
                 if error.code == NSPersistentStoreIncompatibleVersionHashError ||
                    error.code == NSMigrationMissingSourceModelError ||
-                   error.code == NSMigrationMissingMappingModelError {
-                    print("Database migration error detected, attempting to recreate database...")
+                   error.code == NSMigrationMissingMappingModelError ||
+                   error.domain == NSCocoaErrorDomain {
+                    print("⚠️ Database migration/compatibility error detected, attempting to recreate database...")
                     self.deleteAndRecreateStore()
                 } else {
+                    print("❌ Fatal Core Data error that cannot be resolved")
                     fatalError("Unresolved error \(error), \(error.userInfo)")
                 }
+            } else {
+                print("✅ Core Data store loaded successfully")
             }
         })
         container.viewContext.automaticallyMergesChangesFromParent = true
