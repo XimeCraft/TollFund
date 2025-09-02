@@ -101,26 +101,27 @@ struct BigTaskRow: View {
                                 .lineLimit(2)
                         }
                         
+                        // TODO: Temporarily commented out due to Core Data issues
                         // 类别和子类别标签
-                        if let category = task.category, let subcategory = task.subcategory {
-                            HStack(spacing: 4) {
-                                Text(category)
-                                    .font(.caption)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.blue.opacity(0.1))
-                                    .foregroundColor(.blue)
-                                    .clipShape(Capsule())
-                                
-                                Text(subcategory)
-                                    .font(.caption)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.green.opacity(0.1))
-                                    .foregroundColor(.green)
-                                    .clipShape(Capsule())
-                            }
-                        }
+                        // if let category = task.category, let subcategory = task.subcategory {
+                        //     HStack(spacing: 4) {
+                        //         Text(category)
+                        //             .font(.caption)
+                        //             .padding(.horizontal, 6)
+                        //             .padding(.vertical, 2)
+                        //             .background(Color.blue.opacity(0.1))
+                        //             .foregroundColor(.blue)
+                        //             .clipShape(Capsule())
+                        //         
+                        //         Text(subcategory)
+                        //             .font(.caption)
+                        //             .padding(.horizontal, 6)
+                        //             .padding(.vertical, 2)
+                        //             .background(Color.green.opacity(0.1))
+                        //             .foregroundColor(.green)
+                        //             .clipShape(Capsule())
+                        //     }
+                        // }
                     }
                     
                     Spacer()
@@ -193,8 +194,11 @@ struct BigTaskDetailView: View {
         self._editedDescription = State(initialValue: task.taskDescription ?? "")
         self._editedRewardAmount = State(initialValue: task.rewardAmount)
         self._editedProgress = State(initialValue: task.progress)
-        self._editedCategory = State(initialValue: ChallengeCategory(rawValue: task.category ?? ""))
-        self._editedSubcategory = State(initialValue: ChallengeSubcategory(rawValue: task.subcategory ?? ""))
+        // TODO: Temporarily commented out due to Core Data issues
+        // self._editedCategory = State(initialValue: ChallengeCategory(rawValue: task.category ?? ""))
+        // self._editedSubcategory = State(initialValue: ChallengeSubcategory(rawValue: task.subcategory ?? ""))
+        self._editedCategory = State(initialValue: nil)
+        self._editedSubcategory = State(initialValue: nil)
     }
     
     var body: some View {
@@ -308,8 +312,9 @@ struct BigTaskDetailView: View {
         task.rewardAmount = editedRewardAmount
         task.progress = editedProgress
         task.status = computedStatus.rawValue
-        task.category = editedCategory?.rawValue
-        task.subcategory = editedSubcategory?.rawValue
+        // TODO: Temporarily commented out due to Core Data issues
+        // task.category = editedCategory?.rawValue
+        // task.subcategory = editedSubcategory?.rawValue
         
         // 如果任务完成了，设置完成日期
         if computedStatus == .completed && task.completedDate == nil {
@@ -424,8 +429,9 @@ struct AddBigTaskView: View {
         newTask.title = title
         newTask.taskDescription = description
         newTask.rewardAmount = rewardAmount
-        newTask.category = selectedCategory?.rawValue
-        newTask.subcategory = selectedSubcategory?.rawValue
+        // TODO: Temporarily commented out due to Core Data issues
+        // newTask.category = selectedCategory?.rawValue
+        // newTask.subcategory = selectedSubcategory?.rawValue
         newTask.status = BigTaskStatus.notStarted.rawValue
         newTask.progress = 0.0
         newTask.createdDate = Date()

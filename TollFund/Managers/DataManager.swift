@@ -22,8 +22,9 @@ class PersistenceController: ObservableObject {
         bigTask.title = "完成Swift学习课程"
         bigTask.taskDescription = "学习完整的Swift编程语言课程"
         bigTask.rewardAmount = 500
-        bigTask.category = "学习"
-        bigTask.subcategory = "lecture"
+        // TODO: Temporarily commented out due to Core Data issues
+        // bigTask.category = "学习"
+        // bigTask.subcategory = "lecture"
         bigTask.status = BigTaskStatus.inProgress.rawValue
         bigTask.createdDate = Date()
         bigTask.targetDate = Calendar.current.date(byAdding: .month, value: 1, to: Date())
