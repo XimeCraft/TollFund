@@ -22,6 +22,12 @@ struct DailyTasksView: View {
             NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)
         ]
     ) private var allTasks: FetchedResults<DailyTask>
+    
+    // 监听固定任务模板变化
+    @FetchRequest(
+        entity: FixedTaskTemplate.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \FixedTaskTemplate.title, ascending: true)]
+    ) private var fixedTaskTemplates: FetchedResults<FixedTaskTemplate>
 
     // 获取选中日期的任务
     var tasksForSelectedDate: [DailyTask] {
@@ -128,6 +134,14 @@ struct DailyTasksView: View {
             .onChange(of: selectedDate) { newDate in
                 ensureDailyTasksExist(for: newDate)
             }
+            .onChange(of: fixedTaskTemplates.count) { _ in
+                print("🔄 固定任务模板发生变化，重新生成任务")
+                ensureDailyTasksExist(for: selectedDate)
+            }
+            .onChange(of: fixedTaskTemplates.map { "\($0.isActive)" }.joined()) { _ in
+                print("🔄 固定任务模板激活状态发生变化，重新生成任务")
+                ensureDailyTasksExist(for: selectedDate)
+            }
             .alert("确认删除", isPresented: $showingDeleteConfirmation) {
                 Button("取消", role: .cancel) {
                     taskToDelete = nil
@@ -199,8 +213,12 @@ struct DailyTasksView: View {
             print("💾 固定任务数据已保存")
 
             // 使用小延迟确保 UI 正确刷新
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 print("💾 数据已保存，UI应该已经刷新")
+                print("📊 当前选中日期的任务数量: \(self.tasksForSelectedDate.count)")
+                for task in self.tasksForSelectedDate {
+                    print("   📋 任务: \(task.title ?? "无标题") - 固定:\(task.isFixed)")
+                }
             }
         } catch {
             print("❌ 保存固定任务数据失败: \(error)")
@@ -309,6 +327,7 @@ struct TaskSectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // 标题栏
             HStack {
                 Image(systemName: icon)
                     .foregroundColor(color)
@@ -324,21 +343,30 @@ struct TaskSectionView: View {
                     .background(color.opacity(0.1))
                     .clipShape(Capsule())
             }
+            .padding(.horizontal)
+            .padding(.top)
 
-            ForEach(tasks, id: \.id) { task in
-                DailyTaskRow(task: task, onEdit: {
-                    onEditTask(task)
-                })
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        onDeleteTask(task)
-                    } label: {
-                        Label("删除", systemImage: "trash")
+            // 任务列表 - 使用List支持swipeActions
+            List {
+                ForEach(tasks, id: \.id) { task in
+                    DailyTaskRow(task: task, onEdit: {
+                        onEditTask(task)
+                    })
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            onDeleteTask(task)
+                        } label: {
+                            Label("删除", systemImage: "trash")
+                        }
                     }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                 }
             }
+            .listStyle(PlainListStyle())
+            .frame(height: CGFloat(tasks.count * 80)) // 动态高度
         }
-        .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
