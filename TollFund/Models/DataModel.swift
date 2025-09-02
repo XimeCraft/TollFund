@@ -135,7 +135,7 @@ enum ChallengeSubcategory: String, CaseIterable {
     case learningLecture = "lecture"
     
     // 高分游戏
-    case gameStory = "剧情"
+    case gameStory = "Story"
     case gameAdventure = "冒险"
     case gamePuzzle = "解谜"
     case gameNarrative = "独立叙事"

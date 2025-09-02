@@ -6,8 +6,9 @@ struct TollFundApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LaunchScreenView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .environmentObject(persistenceController)
         }
     }
 }

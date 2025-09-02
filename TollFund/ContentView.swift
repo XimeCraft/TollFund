@@ -4,9 +4,12 @@ import CoreData
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var dataManager = PersistenceController.shared
+    @AppStorage("hasShownWelcome") private var hasShownWelcome = false
+    @State private var showWelcome = false
     
     var body: some View {
-        TabView {
+        ZStack {
+            TabView {
             DashboardView()
                 .tabItem {
                     Image(systemName: "chart.pie.fill")
@@ -36,9 +39,29 @@ struct ContentView: View {
                     Image(systemName: "chart.bar.fill")
                     Text("统计")
                 }
+            }
+            .accentColor(.blue)
+            .environmentObject(dataManager)
+            
+            // 欢迎页面覆盖
+            if showWelcome {
+                WelcomeView(showWelcome: $showWelcome)
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
         }
-        .accentColor(.blue)
-        .environmentObject(dataManager)
+        .onAppear {
+            if !hasShownWelcome {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showWelcome = true
+                }
+            }
+        }
+        .onChange(of: showWelcome) { newValue in
+            if !newValue {
+                hasShownWelcome = true
+            }
+        }
     }
 }
 
