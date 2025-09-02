@@ -131,8 +131,7 @@ struct BigTaskRow: View {
                         .font(.subheadline)
                         .foregroundColor(.green)
                     TextField("0", value: $editableRewardAmount, format: .number)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.green)
                         .keyboardType(.decimalPad)
                         .frame(width: 60)
@@ -150,8 +149,7 @@ struct BigTaskRow: View {
                         .foregroundColor(.secondary)
                     Spacer()
                     Text("\(editableProgress * 100, specifier: "%.0f")%")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.system(size: 12, weight: .medium))
                 }
                 
                 Slider(value: $editableProgress, in: 0...1, step: 0.01) {
@@ -299,7 +297,7 @@ struct BigTaskDetailView: View {
                             Spacer()
                             Text("¥\(task.rewardAmount, specifier: "%.0f")")
                                 .foregroundColor(.green)
-                                .fontWeight(.medium)
+                                .font(.system(size: 15, weight: .medium))
                         }
                         
                         VStack(alignment: .leading) {
@@ -307,7 +305,7 @@ struct BigTaskDetailView: View {
                                 Text("进度")
                                 Spacer()
                                 Text("\(task.progress * 100, specifier: "%.0f")%")
-                                    .fontWeight(.medium)
+                                    .font(.system(size: 15, weight: .medium))
                             }
                             ProgressView(value: task.progress)
                                 .tint(.blue)
@@ -554,14 +552,13 @@ struct PresetBigTaskButton: View {
                 HStack {
                     Text(title)
                         .foregroundColor(.primary)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                     
                     Spacer()
                     
                     Text("¥\(amount, specifier: "%.0f")")
                         .foregroundColor(.green)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                 }
                 
                 Text(description)
@@ -583,9 +580,8 @@ struct BigTaskEmptyStateView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
             
-            Text("还没有\(status.rawValue)的大任务")
-                .font(.title2)
-                .fontWeight(.medium)
+            Text("还没有\(status.rawValue)的挑战")
+                .font(.system(size: 22, weight: .medium))
                 .foregroundColor(.secondary)
             
             Text("点击右上角的 + 按钮添加你的第一个大任务")
