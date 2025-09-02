@@ -61,11 +61,12 @@ class PersistenceController: ObservableObject {
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         } else {
-            // 启用轻量级迁移
-            let description = NSPersistentStoreDescription()
+            // 启用轻量级迁移和持久化
+            let description = container.persistentStoreDescriptions.first!
             description.shouldMigrateStoreAutomatically = true
             description.shouldInferMappingModelAutomatically = true
-            container.persistentStoreDescriptions = [description]
+            description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+            description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         }
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
@@ -86,6 +87,9 @@ class PersistenceController: ObservableObject {
                 }
             } else {
                 print("✅ Core Data store loaded successfully")
+                if let storeURL = storeDescription.url {
+                    print("📂 数据库位置: \(storeURL)")
+                }
             }
         })
         container.viewContext.automaticallyMergesChangesFromParent = true
@@ -97,10 +101,26 @@ class PersistenceController: ObservableObject {
         if context.hasChanges {
             do {
                 try context.save()
+                print("💾 数据已成功保存到Core Data")
             } catch {
                 let nsError = error as NSError
-                print("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("❌ Core Data保存失败: \(nsError), \(nsError.userInfo)")
+                
+                // 尝试回滚并重新保存
+                context.rollback()
+                print("🔄 已回滚上下文，尝试重新保存...")
+                
+                if context.hasChanges {
+                    do {
+                        try context.save()
+                        print("✅ 重新保存成功")
+                    } catch {
+                        print("❌ 重新保存也失败了: \(error)")
+                    }
+                }
             }
+        } else {
+            print("📝 没有需要保存的更改")
         }
     }
 
