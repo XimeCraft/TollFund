@@ -209,15 +209,12 @@ struct DailyTasksView: View {
     
     // 智能删除任务（根据任务类型决定是否需要确认）
     private func handleDeleteTask(_ task: DailyTask) {
-        print("🗑️ 准备删除任务: \(task.title ?? "") - 是否固定: \(task.isFixed)")
         if task.isFixed {
             // 固定任务需要确认
-            print("📋 固定任务，显示确认对话框")
             taskToDelete = task
             showingDeleteConfirmation = true
         } else {
             // 临时任务直接删除
-            print("📋 临时任务，直接删除")
             deleteTaskDirectly(task)
         }
     }
