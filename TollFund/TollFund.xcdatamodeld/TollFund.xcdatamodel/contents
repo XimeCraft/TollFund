@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23C71" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="BigTask" representedClassName="BigTask" syncable="YES" codeGenerationType="class">
+        <attribute name="category" optional="YES" attributeType="String"/>
         <attribute name="completedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="progress" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="rewardAmount" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="status" optional="YES" attributeType="String"/>
+        <attribute name="subcategory" optional="YES" attributeType="String"/>
         <attribute name="targetDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="taskDescription" optional="YES" attributeType="String"/>
         <attribute name="title" optional="YES" attributeType="String"/>

@@ -100,6 +100,27 @@ struct BigTaskRow: View {
                                 .foregroundColor(.secondary)
                                 .lineLimit(2)
                         }
+                        
+                        // 类别和子类别标签
+                        if let category = task.category, let subcategory = task.subcategory {
+                            HStack(spacing: 4) {
+                                Text(category)
+                                    .font(.caption)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.1))
+                                    .foregroundColor(.blue)
+                                    .clipShape(Capsule())
+                                
+                                Text(subcategory)
+                                    .font(.caption)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green.opacity(0.1))
+                                    .foregroundColor(.green)
+                                    .clipShape(Capsule())
+                            }
+                        }
                     }
                     
                     Spacer()
@@ -153,6 +174,8 @@ struct BigTaskDetailView: View {
     @State private var editedDescription: String
     @State private var editedRewardAmount: Double
     @State private var editedProgress: Double
+    @State private var editedCategory: ChallengeCategory?
+    @State private var editedSubcategory: ChallengeSubcategory?
     
     var computedStatus: BigTaskStatus {
         if editedProgress <= 0 {
@@ -170,6 +193,8 @@ struct BigTaskDetailView: View {
         self._editedDescription = State(initialValue: task.taskDescription ?? "")
         self._editedRewardAmount = State(initialValue: task.rewardAmount)
         self._editedProgress = State(initialValue: task.progress)
+        self._editedCategory = State(initialValue: ChallengeCategory(rawValue: task.category ?? ""))
+        self._editedSubcategory = State(initialValue: ChallengeSubcategory(rawValue: task.subcategory ?? ""))
     }
     
     var body: some View {
@@ -180,6 +205,14 @@ struct BigTaskDetailView: View {
                     
                     TextField("描述（可选）", text: $editedDescription)
                         .lineLimit(3)
+                }
+                
+                Section(header: Text("类别设置")) {
+                    CategorySelectionView(
+                        selectedCategory: $editedCategory,
+                        selectedSubcategory: $editedSubcategory,
+                        rewardAmount: $editedRewardAmount
+                    )
                 }
                 
                 Section(header: Text("奖励和进度")) {
@@ -275,6 +308,8 @@ struct BigTaskDetailView: View {
         task.rewardAmount = editedRewardAmount
         task.progress = editedProgress
         task.status = computedStatus.rawValue
+        task.category = editedCategory?.rawValue
+        task.subcategory = editedSubcategory?.rawValue
         
         // 如果任务完成了，设置完成日期
         if computedStatus == .completed && task.completedDate == nil {
@@ -300,6 +335,8 @@ struct AddBigTaskView: View {
     @State private var title = ""
     @State private var description = ""
     @State private var rewardAmount = 100.0
+    @State private var selectedCategory: ChallengeCategory?
+    @State private var selectedSubcategory: ChallengeSubcategory?
     
     var body: some View {
         NavigationView {
@@ -308,6 +345,14 @@ struct AddBigTaskView: View {
                     TextField("任务标题", text: $title)
                     TextField("任务描述", text: $description)
                         .lineLimit(3)
+                }
+                
+                Section(header: Text("类别设置")) {
+                    CategorySelectionView(
+                        selectedCategory: $selectedCategory,
+                        selectedSubcategory: $selectedSubcategory,
+                        rewardAmount: $rewardAmount
+                    )
                 }
                 
                 Section(header: Text("奖励设置")) {
@@ -367,7 +412,7 @@ struct AddBigTaskView: View {
                     Button("保存") {
                         saveTask()
                     }
-                    .disabled(title.isEmpty)
+                    .disabled(title.isEmpty || selectedCategory == nil || selectedSubcategory == nil)
                 }
             }
         }
@@ -379,6 +424,8 @@ struct AddBigTaskView: View {
         newTask.title = title
         newTask.taskDescription = description
         newTask.rewardAmount = rewardAmount
+        newTask.category = selectedCategory?.rawValue
+        newTask.subcategory = selectedSubcategory?.rawValue
         newTask.status = BigTaskStatus.notStarted.rawValue
         newTask.progress = 0.0
         newTask.createdDate = Date()
@@ -441,6 +488,90 @@ struct BigTaskEmptyStateView: View {
                 .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - 类别选择组件
+struct CategorySelectionView: View {
+    @Binding var selectedCategory: ChallengeCategory?
+    @Binding var selectedSubcategory: ChallengeSubcategory?
+    @Binding var rewardAmount: Double
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // 类别选择
+            VStack(alignment: .leading, spacing: 8) {
+                Text("类别 *")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Menu {
+                    ForEach(ChallengeCategory.allCases, id: \.self) { category in
+                        Button(category.rawValue) {
+                            selectedCategory = category
+                            selectedSubcategory = nil // 重置子类别
+                            rewardAmount = 0 // 重置金额，等待子类别选择
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(selectedCategory?.rawValue ?? "请选择类别")
+                            .foregroundColor(selectedCategory == nil ? .secondary : .primary)
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+            }
+            
+            // 子类别选择 (依赖类别选择)
+            if let category = selectedCategory {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("子类别 *")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Menu {
+                        ForEach(category.subcategories, id: \.self) { subcategory in
+                            Button(subcategory.rawValue) {
+                                selectedSubcategory = subcategory
+                                rewardAmount = subcategory.defaultRewardAmount // 自动设置奖励金额
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(selectedSubcategory?.rawValue ?? "请选择子类别")
+                                .foregroundColor(selectedSubcategory == nil ? .secondary : .primary)
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
+                }
+            }
+            
+            // 显示默认奖励金额
+            if let subcategory = selectedSubcategory {
+                HStack {
+                    Text("默认奖励:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("¥\(Int(subcategory.defaultRewardAmount))")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.green)
+                }
+                .padding()
+                .background(Color(.systemGray6).opacity(0.5))
+                .cornerRadius(8)
+            }
+        }
     }
 }
 

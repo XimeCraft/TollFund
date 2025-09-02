@@ -89,6 +89,111 @@ enum BigTaskStatus: String, CaseIterable {
     }
 }
 
+// MARK: - 挑战类别枚举
+enum ChallengeCategory: String, CaseIterable {
+    case reading = "阅读"
+    case project = "项目"
+    case learning = "学习"
+    case highScoreGame = "高分游戏"
+    case highScoreMovie = "高分电影"
+    case drums = "架子鼓"
+    case guitar = "吉他"
+    
+    var subcategories: [ChallengeSubcategory] {
+        switch self {
+        case .reading:
+            return [.reading300Pages, .reading500Pages]
+        case .project:
+            return [.projectAnalysis, .projectPrediction, .projectEngineering]
+        case .learning:
+            return [.learningPaper, .learningLecture]
+        case .highScoreGame:
+            return [.gameStory, .gameAdventure, .gamePuzzle, .gameNarrative]
+        case .highScoreMovie:
+            return [.movieDrama, .movieBiography, .movieSciFi, .movieArt, .movieAnimation, .movieComedy]
+        case .drums:
+            return [.drumsSimple, .drumsMedium]
+        case .guitar:
+            return [.guitarFingerstyle, .guitarSinging]
+        }
+    }
+}
+
+// MARK: - 挑战子类别枚举
+enum ChallengeSubcategory: String, CaseIterable {
+    // 阅读
+    case reading300Pages = "300 pages"
+    case reading500Pages = "500 pages"
+    
+    // 项目
+    case projectAnalysis = "分析"
+    case projectPrediction = "预测"
+    case projectEngineering = "工程"
+    
+    // 学习
+    case learningPaper = "论文"
+    case learningLecture = "lecture"
+    
+    // 高分游戏
+    case gameStory = "剧情"
+    case gameAdventure = "冒险"
+    case gamePuzzle = "解谜"
+    case gameNarrative = "独立叙事"
+    
+    // 高分电影
+    case movieDrama = "剧情"
+    case movieBiography = "传记"
+    case movieSciFi = "科幻"
+    case movieArt = "文艺"
+    case movieAnimation = "动画"
+    case movieComedy = "喜剧"
+    
+    // 架子鼓
+    case drumsSimple = "简单"
+    case drumsMedium = "中等"
+    
+    // 吉他
+    case guitarFingerstyle = "指弹"
+    case guitarSinging = "弹唱"
+    
+    var category: ChallengeCategory {
+        switch self {
+        case .reading300Pages, .reading500Pages:
+            return .reading
+        case .projectAnalysis, .projectPrediction, .projectEngineering:
+            return .project
+        case .learningPaper, .learningLecture:
+            return .learning
+        case .gameStory, .gameAdventure, .gamePuzzle, .gameNarrative:
+            return .highScoreGame
+        case .movieDrama, .movieBiography, .movieSciFi, .movieArt, .movieAnimation, .movieComedy:
+            return .highScoreMovie
+        case .drumsSimple, .drumsMedium:
+            return .drums
+        case .guitarFingerstyle, .guitarSinging:
+            return .guitar
+        }
+    }
+    
+    var defaultRewardAmount: Double {
+        switch self {
+        case .reading300Pages: return 100
+        case .reading500Pages: return 150
+        case .projectAnalysis: return 50
+        case .projectPrediction: return 100
+        case .projectEngineering: return 200
+        case .learningPaper: return 20
+        case .learningLecture: return 20
+        case .gameStory, .gameAdventure, .gamePuzzle, .gameNarrative: return 20
+        case .movieDrama, .movieBiography, .movieSciFi, .movieArt, .movieAnimation, .movieComedy: return 20
+        case .drumsSimple: return 20
+        case .drumsMedium: return 50
+        case .guitarFingerstyle: return 50
+        case .guitarSinging: return 20
+        }
+    }
+}
+
 // MARK: - 统计数据结构
 struct DashboardStats {
     let totalBalance: Double
