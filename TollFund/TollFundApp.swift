@@ -56,46 +56,50 @@ struct LaunchScreen: View {
     
     var body: some View {
         ZStack {
-            // 背景渐变
+            // 绿色渐变背景
             LinearGradient(
-                gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.purple.opacity(0.6)]),
+                gradient: Gradient(colors: [Color.green.opacity(0.8), Color.mint.opacity(0.7), Color.teal.opacity(0.6)]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 20) {
-                // 封面图片
-                if let image = UIImage(named: "cover-image") {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: 300, maxHeight: 300)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-                } else {
-                    // 备用图标
-                    Image(systemName: "dollarsign.circle.fill")
-                        .font(.system(size: 100))
-                        .foregroundColor(.white)
-                }
+            VStack(spacing: 30) {
+                // 应用图标 - 使用系统图标
+                Image(systemName: "dollarsign.circle.fill")
+                    .font(.system(size: 120))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
                 
                 // 应用标题
-                VStack(spacing: 8) {
+                VStack(spacing: 12) {
                     Text("TollFund")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.system(size: 42, weight: .bold))
                         .foregroundColor(.white)
                     
                     Text("智能挑战奖励系统")
-                        .font(.title3)
-                        .foregroundColor(.white.opacity(0.8))
+                        .font(.title2)
+                        .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                }
+                
+                // 装饰性元素
+                HStack(spacing: 20) {
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 8, height: 8)
+                    Circle()
+                        .fill(Color.white.opacity(0.4))
+                        .frame(width: 8, height: 8)
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 8, height: 8)
                 }
                 
                 // 版本信息
                 Text("v1.0")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(.white.opacity(0.7))
             }
             .scaleEffect(size)
             .opacity(opacity)
