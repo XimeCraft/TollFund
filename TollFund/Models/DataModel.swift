@@ -79,14 +79,12 @@ enum BigTaskStatus: String, CaseIterable {
     case notStarted = "未开始"
     case inProgress = "进行中"
     case completed = "已完成"
-    case cancelled = "已取消"
     
     var color: Color {
         switch self {
         case .notStarted: return .gray
         case .inProgress: return .blue
         case .completed: return .green
-        case .cancelled: return .red
         }
     }
 }

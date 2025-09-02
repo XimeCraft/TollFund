@@ -37,7 +37,7 @@ struct BigTasksView: View {
                     .listStyle(PlainListStyle())
                 }
             }
-            .navigationTitle("大任务")
+            .navigationTitle("挑战")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddTask = true }) {
@@ -78,93 +78,158 @@ struct BigTaskRow: View {
     @ObservedObject var task: BigTask
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var dataManager: PersistenceController
-    @State private var showingDetailView = false
+    @State private var editableTitle: String = ""
+    @State private var editableDescription: String = ""
+    @State private var editableRewardAmount: Double = 0
+    @State private var editableProgress: Double = 0
+    @State private var editableTargetDate: Date = Date()
+    @State private var isInitialized = false
     
     var taskStatus: BigTaskStatus {
-        BigTaskStatus(rawValue: task.status ?? "") ?? .notStarted
+        if editableProgress <= 0 {
+            return .notStarted
+        } else if editableProgress >= 1.0 {
+            return .completed
+        } else {
+            return .inProgress
+        }
     }
     
     var body: some View {
-        Button(action: { showingDetailView = true }) {
-            VStack(alignment: .leading, spacing: 12) {
-                // 标题和状态
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(task.title ?? "未知任务")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        if let description = task.taskDescription, !description.isEmpty {
-                            Text(description)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(taskStatus.rawValue)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(taskStatus.color.opacity(0.2))
-                            .foregroundColor(taskStatus.color)
-                            .clipShape(Capsule())
-                        
-                        Text("¥\(task.rewardAmount, specifier: "%.0f")")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.green)
-                    }
+        VStack(alignment: .leading, spacing: 12) {
+            // 可编辑标题
+            TextField("挑战标题", text: $editableTitle)
+                .font(.headline)
+                .textFieldStyle(PlainTextFieldStyle())
+                .onSubmit {
+                    saveChanges()
                 }
-                
-                // 进度条（仅对进行中的任务显示）
-                if taskStatus == .inProgress {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text("进度")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("\(task.progress * 100, specifier: "%.0f")%")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        
-                        ProgressView(value: task.progress)
-                            .tint(.blue)
-                    }
+            
+            // 可编辑描述
+            TextField("描述（可选）", text: $editableDescription)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .textFieldStyle(PlainTextFieldStyle())
+                .onSubmit {
+                    saveChanges()
                 }
+            
+            // 状态和奖励金额
+            HStack {
+                Text(taskStatus.rawValue)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(taskStatus.color.opacity(0.2))
+                    .foregroundColor(taskStatus.color)
+                    .clipShape(Capsule())
                 
-                // 时间信息
+                Spacer()
+                
                 HStack {
-                    if let targetDate = task.targetDate {
-                        Label {
-                            Text(targetDate, style: .date)
-                                .font(.caption)
-                        } icon: {
-                            Image(systemName: "calendar")
-                                .font(.caption)
+                    Text("¥")
+                        .font(.subheadline)
+                        .foregroundColor(.green)
+                    TextField("0", value: $editableRewardAmount, format: .number)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.green)
+                        .keyboardType(.decimalPad)
+                        .frame(width: 60)
+                        .onSubmit {
+                            saveChanges()
                         }
+                }
+            }
+            
+            // 可拖动进度条
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("进度")
+                        .font(.caption)
                         .foregroundColor(.secondary)
-                    }
-                    
                     Spacer()
-                    
-                    if let createdDate = task.createdDate {
-                        Text("创建于 \(createdDate, style: .date)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    Text("\(editableProgress * 100, specifier: "%.0f")%")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                
+                Slider(value: $editableProgress, in: 0...1, step: 0.01) {
+                    Text("进度")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .tint(taskStatus.color)
+                .onChange(of: editableProgress) { _ in
+                    // 进度变化时自动保存
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        saveChanges()
                     }
                 }
             }
-            .padding(.vertical, 8)
+            
+            // 目标日期选择
+            HStack {
+                Label("目标日期", systemImage: "calendar")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                DatePicker("", selection: $editableTargetDate, displayedComponents: .date)
+                    .labelsHidden()
+                    .onChange(of: editableTargetDate) { _ in
+                        saveChanges()
+                    }
+            }
         }
-        .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $showingDetailView) {
-            BigTaskDetailView(task: task)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+        )
+        .onAppear {
+            initializeEditableValues()
+        }
+    }
+    
+    private func initializeEditableValues() {
+        if !isInitialized {
+            editableTitle = task.title ?? ""
+            editableDescription = task.taskDescription ?? ""
+            editableRewardAmount = task.rewardAmount
+            editableProgress = task.progress
+            editableTargetDate = task.targetDate ?? Date()
+            isInitialized = true
+        }
+    }
+    
+    private func saveChanges() {
+        task.title = editableTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        task.taskDescription = editableDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        task.rewardAmount = editableRewardAmount
+        task.progress = editableProgress
+        task.targetDate = editableTargetDate
+        task.status = taskStatus.rawValue
+        
+        // 如果任务完成了，设置完成日期
+        if taskStatus == .completed && task.completedDate == nil {
+            task.completedDate = Date()
+        } else if taskStatus != .completed {
+            task.completedDate = nil
+        }
+        
+        do {
+            try viewContext.save()
+            print("✅ 挑战更新成功: \(task.title ?? "") - 进度: \(editableProgress * 100)% - 状态: \(taskStatus.rawValue)")
+        } catch {
+            print("❌ 保存挑战失败: \(error)")
         }
     }
 }
