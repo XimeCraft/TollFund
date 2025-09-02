@@ -179,6 +179,25 @@ struct DailyTasksView: View {
             print("   📝 模板: \(template.title ?? "无标题") - 活跃:\(template.isActive)")
         }
 
+        // 首先删除已不活跃的固定任务
+        let allFixedTasksFetch: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
+        allFixedTasksFetch.predicate = NSPredicate(format: "isFixed == YES AND taskDate == %@", startOfDay as NSDate)
+        
+        do {
+            let existingFixedTasks = try viewContext.fetch(allFixedTasksFetch)
+            let activeTemplateNames = Set(templates.map { $0.title ?? "" })
+            
+            for task in existingFixedTasks {
+                let taskTitle = task.title ?? ""
+                if !activeTemplateNames.contains(taskTitle) {
+                    print("🗑️ 删除已关闭的固定任务: \(taskTitle)")
+                    viewContext.delete(task)
+                }
+            }
+        } catch {
+            print("❌ 清理固定任务时出错: \(error)")
+        }
+
         // 为每个模板检查是否已有对应日期的任务
         for template in templates {
             let taskFetch: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
