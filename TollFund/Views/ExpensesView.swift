@@ -88,7 +88,7 @@ struct ExpenseSummaryCard: View {
             
             Text("¥\(totalExpense, specifier: "%.2f")")
                 .font(.largeTitle)
-                .fontWeight(.bold)
+                .font(.system(size: 34, weight: .bold))
                 .foregroundColor(.red)
         }
         .frame(maxWidth: .infinity)
@@ -211,7 +211,7 @@ struct ExpenseRow: View {
             // 金额
             Text("¥\(expense.amount, specifier: "%.2f")")
                 .font(.headline)
-                .fontWeight(.medium)
+                .font(.system(size: 17, weight: .medium))
                 .foregroundColor(.red)
         }
         .padding(.vertical, 8)
@@ -376,7 +376,7 @@ struct PresetExpenseButton: View {
                 Text("¥\(amount, specifier: "%.0f")")
                     .foregroundColor(.red)
                     .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.system(size: 17, weight: .medium))
                 
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
@@ -399,12 +399,12 @@ struct ExpenseEmptyStateView: View {
             if let category = selectedCategory {
                 Text("还没有\(category.rawValue)消费记录")
                     .font(.title2)
-                    .fontWeight(.medium)
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.secondary)
             } else {
                 Text("还没有消费记录")
                     .font(.title2)
-                    .fontWeight(.medium)
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.secondary)
             }
             

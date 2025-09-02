@@ -57,7 +57,7 @@ struct DashboardPreview: View {
                         
                         Text("¥1,250.00")
                             .font(.largeTitle)
-                            .fontWeight(.bold)
+                            .font(.system(size: 17, weight: .bold))
                             .foregroundColor(.green)
                     }
                     .frame(maxWidth: .infinity)
@@ -106,7 +106,7 @@ struct DashboardPreview: View {
                             VStack {
                                 Text("15")
                                     .font(.title2)
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 17, weight: .bold))
                                 Text("每日任务")
                                     .font(.caption)
                             }
@@ -118,7 +118,7 @@ struct DashboardPreview: View {
                             VStack {
                                 Text("3")
                                     .font(.title2)
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 17, weight: .bold))
                                 Text("大任务")
                                     .font(.caption)
                             }
@@ -235,7 +235,7 @@ struct BigTaskRow: View {
                 Spacer()
                 Text("¥\(amount, specifier: "%.0f")")
                     .foregroundColor(.green)
-                    .fontWeight(.medium)
+                    .font(.system(size: 17, weight: .medium))
             }
             
             VStack(alignment: .leading, spacing: 4) {
@@ -295,7 +295,7 @@ struct ExpenseRow: View {
             
             Text("¥\(amount, specifier: "%.0f")")
                 .foregroundColor(.red)
-                .fontWeight(.medium)
+                .font(.system(size: 17, weight: .medium))
         }
         .padding(.vertical, 4)
     }
@@ -341,7 +341,7 @@ struct StatisticsPreview: View {
                                     .font(.caption)
                                 Text("¥1,890")
                                     .font(.caption)
-                                    .fontWeight(.medium)
+                                    .font(.system(size: 17, weight: .medium))
                             }
                             
                             VStack {
@@ -352,7 +352,7 @@ struct StatisticsPreview: View {
                                     .font(.caption)
                                 Text("¥640")
                                     .font(.caption)
-                                    .fontWeight(.medium)
+                                    .font(.system(size: 17, weight: .medium))
                             }
                         }
                     }
@@ -369,7 +369,7 @@ struct StatisticsPreview: View {
                                 Text("每日任务")
                                 Text("85%")
                                     .font(.title2)
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.blue)
                             }
                             .frame(maxWidth: .infinity)
@@ -378,7 +378,7 @@ struct StatisticsPreview: View {
                                 Text("大任务")
                                 Text("60%")
                                     .font(.title2)
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 17, weight: .bold))
                                     .foregroundColor(.purple)
                             }
                             .frame(maxWidth: .infinity)

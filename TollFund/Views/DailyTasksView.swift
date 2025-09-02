@@ -440,8 +440,7 @@ struct DailyTaskRow: View {
                     Spacer()
 
                     Text("¥\(task.rewardAmount, specifier: "%.0f")")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.green)
                 }
             }
@@ -729,8 +728,7 @@ struct PresetTaskButton: View {
                 
                 Text("¥\(amount, specifier: "%.0f")")
                     .foregroundColor(.green)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.system(size: 14, weight: .medium))
                 
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
@@ -751,8 +749,7 @@ struct EmptyStateView: View {
                 .foregroundColor(.secondary)
 
             Text(emptyStateTitle)
-                .font(.title2)
-                .fontWeight(.medium)
+                .font(.system(size: 22, weight: .medium))
                 .foregroundColor(.secondary)
 
             Text(emptyStateMessage)
@@ -921,8 +918,7 @@ struct TaskHistoryView: View {
                 }) {
                     HStack {
                         Text(formattedDate(selectedDate))
-                            .font(.body)
-                            .fontWeight(.regular)
+                            .font(.system(size: 17, weight: .regular))
                             .foregroundColor(.primary)
 
                         Spacer()
@@ -1148,8 +1144,7 @@ struct FixedTaskTemplateRow: View {
                         Spacer()
 
                         Text("¥\(template.rewardAmount, specifier: "%.0f")")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.green)
                     }
                 }
@@ -1194,8 +1189,7 @@ struct PresetTemplateButton: View {
 
                 Text("¥\(amount, specifier: "%.0f")")
                     .foregroundColor(.green)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.system(size: 14, weight: .medium))
 
                 Image(systemName: "plus.circle")
                     .foregroundColor(.blue)

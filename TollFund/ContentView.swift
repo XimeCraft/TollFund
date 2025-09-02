@@ -147,8 +147,7 @@ struct WelcomeScreen: View {
                             Image(systemName: "arrow.right.circle.fill")
                             Text("开始我的奖励之旅")
                         }
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.green)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)

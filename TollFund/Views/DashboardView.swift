@@ -91,7 +91,7 @@ struct BalanceCard: View {
             
             Text("¥\(balance, specifier: "%.2f")")
                 .font(.largeTitle)
-                .fontWeight(.bold)
+                .font(.system(size: 34, weight: .bold))
                 .foregroundColor(balance >= 0 ? .green : .red)
         }
         .frame(maxWidth: .infinity)
@@ -128,7 +128,7 @@ struct IncomeExpenseOverview: View {
                     }
                     Text("¥\(stats.totalIncome, specifier: "%.2f")")
                         .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.green)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,7 +144,7 @@ struct IncomeExpenseOverview: View {
                     }
                     Text("¥\(stats.totalExpense, specifier: "%.2f")")
                         .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.red)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -160,7 +160,7 @@ struct IncomeExpenseOverview: View {
                         .foregroundColor(.secondary)
                     Text("¥\(stats.incomeThisMonth, specifier: "%.2f")")
                         .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.green)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -171,7 +171,7 @@ struct IncomeExpenseOverview: View {
                         .foregroundColor(.secondary)
                     Text("¥\(stats.expenseThisMonth, specifier: "%.2f")")
                         .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.red)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -202,7 +202,7 @@ struct TaskCompletionCard: View {
                         .foregroundColor(.blue)
                     Text("\(stats.dailyTasksCompleted)")
                         .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 34, weight: .bold))
                     Text("每日任务")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -221,7 +221,7 @@ struct TaskCompletionCard: View {
                         .foregroundColor(.purple)
                     Text("\(stats.bigTasksCompleted)")
                         .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: 34, weight: .bold))
                     Text("大任务")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -265,7 +265,7 @@ struct CategoryExpenseChart: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("¥\(expense.amount, specifier: "%.2f")")
                             .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.system(size: 15, weight: .medium))
                         Text("\(expense.percentage, specifier: "%.1f")%")
                             .font(.caption)
                             .foregroundColor(.secondary)

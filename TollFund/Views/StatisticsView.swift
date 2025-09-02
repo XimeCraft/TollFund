@@ -159,7 +159,7 @@ struct IncomeExpenseChart: View {
                         .font(.caption)
                     Text("¥\(String(format: "%.0f", stats.totalIncome))")
                         .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                 }
 
                 VStack {
@@ -170,7 +170,7 @@ struct IncomeExpenseChart: View {
                         .font(.caption)
                     Text("¥\(String(format: "%.0f", stats.totalExpense))")
                         .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.system(size: 15, weight: .medium))
                 }
             }
             .frame(height: 160)
@@ -207,7 +207,7 @@ struct CategoryPieChart: View {
                         
                         Text("\(String(format: "%.1f", expense.percentage))%")
                             .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.system(size: 15, weight: .medium))
                     }
                 }
             }
@@ -352,7 +352,7 @@ struct StatCard: View {
             
             Text(value)
                 .font(.subheadline)
-                .fontWeight(.semibold)
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -405,7 +405,7 @@ struct TaskCompletionStats: View {
                         
                         Text("\(String(format: "%.1f", dailyTaskCompletionRate * 100))%")
                             .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 17, weight: .bold))
                             .foregroundColor(.blue)
                     }
                     
@@ -426,7 +426,7 @@ struct TaskCompletionStats: View {
                         
                         Text("\(String(format: "%.1f", bigTaskCompletionRate * 100))%")
                             .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 17, weight: .bold))
                             .foregroundColor(.purple)
                     }
                     
@@ -462,7 +462,7 @@ struct CircularProgressView: View {
             
             Text("\(String(format: "%.0f", progress * 100))%")
                 .font(.caption)
-                .fontWeight(.medium)
+                                            .font(.system(size: 15, weight: .medium))
                 .foregroundColor(color)
         }
     }
