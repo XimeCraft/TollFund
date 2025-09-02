@@ -175,23 +175,20 @@ struct BigTaskDetailView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("挑战信息") {
+                Section(header: Text("挑战信息")) {
                     TextField("挑战标题", text: $editedTitle)
-                        .onSubmit { saveChanges() }
                     
-                    TextField("描述（可选）", text: $editedDescription, axis: .vertical)
-                        .lineLimit(3...6)
-                        .onSubmit { saveChanges() }
+                    TextField("描述（可选）", text: $editedDescription)
+                        .lineLimit(3)
                 }
                 
-                Section("奖励和进度") {
+                Section(header: Text("奖励和进度")) {
                     HStack {
                         Text("奖励金额")
                         Spacer()
                         TextField("金额", value: $editedRewardAmount, format: .number)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
-                            .onSubmit { saveChanges() }
                         Text("元")
                             .foregroundColor(.secondary)
                     }
@@ -217,15 +214,12 @@ struct BigTaskDetailView: View {
                         }
                         .tint(computedStatus.color)
                         .onChange(of: editedProgress) { _ in
-                            // 延迟保存避免频繁更新
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                saveChanges()
-                            }
+                            saveChanges()
                         }
                     }
                 }
                 
-                Section("状态和时间") {
+                Section(header: Text("状态和时间")) {
                     HStack {
                         Text("当前状态")
                         Spacer()
@@ -360,7 +354,7 @@ struct AddBigTaskView: View {
                     }
                 }
             }
-            .navigationTitle("添加大任务")
+            .navigationTitle("添加挑战")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -440,7 +434,7 @@ struct BigTaskEmptyStateView: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundColor(.secondary)
             
-            Text("点击右上角的 + 按钮添加你的第一个大任务")
+            Text("点击右上角的 + 按钮添加你的第一个挑战")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
