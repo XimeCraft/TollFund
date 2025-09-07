@@ -904,6 +904,8 @@ struct FixedTaskConfigView: View {
             historyTasksForSelectedDate = []
         }
     }
+}
+
 // MARK: - 任务历史视图 (已移除，功能整合到主视图)
 
 // MARK: - 日期选择器弹窗
