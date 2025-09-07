@@ -120,7 +120,7 @@ struct DailyTasksView: View {
 
                     // 第二页：历史记录
                     VStack {
-                        TaskHistoryContent(selectedDate: $historySelectedDate, tasksForSelectedDate: $historyTasksForSelectedDate, showingDatePicker: $showingHistoryDatePicker, editingTask: $editingTask)
+                        TaskHistoryContent(selectedDate: $historySelectedDate, tasksForSelectedDate: $historyTasksForSelectedDate, showingDatePicker: $showingHistoryDatePicker, editingTask: $editingTask, onDateChange: loadTasksForHistoryDate)
                     }
                     .tabItem {
                         Image(systemName: "clock.arrow.circlepath")
@@ -178,9 +178,6 @@ struct DailyTasksView: View {
             .onChange(of: fixedTaskTemplates.map { "\($0.isActive)" }.joined()) { _ in
                 print("🔄 固定任务模板激活状态发生变化，重新生成任务")
                 ensureDailyTasksExist(for: selectedDate)
-            }
-            .onChange(of: historySelectedDate) { newDate in
-                loadTasksForHistoryDate(newDate)
             }
             .alert("确认删除", isPresented: $showingDeleteConfirmation) {
                 Button("取消", role: .cancel) {
@@ -1313,6 +1310,7 @@ struct TaskHistoryContent: View {
     @Binding var tasksForSelectedDate: [DailyTask]
     @Binding var showingDatePicker: Bool
     @Binding var editingTask: DailyTask?
+    var onDateChange: (Date) -> Void
 
     var body: some View {
         VStack {
@@ -1361,6 +1359,9 @@ struct TaskHistoryContent: View {
             }
         }
         .padding(.top)
+        .onChange(of: selectedDate) { newDate in
+            onDateChange(newDate)
+        }
     }
 
     private func formattedDate(_ date: Date) -> String {
