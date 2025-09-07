@@ -30,8 +30,6 @@ struct DashboardView: View {
                         CategoryExpenseChart(categoryExpenses: categoryExpenses)
                     }
                     
-                    // 快速操作按钮
-                    QuickActionsCard()
                 }
                 .padding()
             }

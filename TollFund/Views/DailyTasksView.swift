@@ -5,7 +5,7 @@ import CoreData
 struct DailyTasksView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var dataManager: PersistenceController
-
+    
     @State private var selectedDate = Date()
     @State private var showingAddTask = false
     @State private var showingTaskConfig = false
@@ -56,7 +56,7 @@ struct DailyTasksView: View {
     var tempTasks: [DailyTask] {
         tasksForSelectedDate.filter { !$0.isFixed }
     }
-
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -182,11 +182,11 @@ struct DailyTasksView: View {
         // 首先删除已不活跃的固定任务
         let allFixedTasksFetch: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
         allFixedTasksFetch.predicate = NSPredicate(format: "isFixed == YES AND taskDate == %@", startOfDay as NSDate)
-        
+
         do {
             let existingFixedTasks = try viewContext.fetch(allFixedTasksFetch)
             let activeTemplateNames = Set(templates.map { $0.title ?? "" })
-            
+
             for task in existingFixedTasks {
                 let taskTitle = task.title ?? ""
                 if !activeTemplateNames.contains(taskTitle) {
@@ -212,14 +212,21 @@ struct DailyTasksView: View {
                     newTask.id = UUID()
                     newTask.title = template.title
                     newTask.taskType = template.taskType
+                    // 保存创建时的模板金额，之后不会随模板变化而变化
                     newTask.rewardAmount = template.rewardAmount
                     newTask.originalRewardAmount = template.rewardAmount
                     newTask.isFixed = true
                     newTask.isCompleted = false
                     newTask.taskDate = startOfDay
                     newTask.createdDate = Date()
+                    // 记录任务创建时的模板信息，用于历史追踪
+                    print("💰 创建任务金额: ¥\(template.rewardAmount) (模板当前金额)")
                 } else {
                     print("✅ 固定任务已存在: \(template.title ?? "")")
+                    // 历史任务保持原有金额，不受模板变化影响
+                    for task in existingTasks {
+                        print("   📋 历史任务金额: ¥\(task.rewardAmount)")
+                    }
                 }
             } catch {
                 print("❌ 检查固定任务时出错: \(error)")
@@ -400,11 +407,11 @@ struct DailyTaskRow: View {
     @EnvironmentObject private var dataManager: PersistenceController
     
     let onEdit: (() -> Void)?
-
+    
     var taskType: TaskType {
         TaskType(rawValue: task.taskType ?? "") ?? .other
     }
-
+    
     var body: some View {
         HStack(spacing: 12) {
             // 任务类型图标
@@ -412,15 +419,15 @@ struct DailyTaskRow: View {
                 .font(.title2)
                 .foregroundColor(taskType.color)
                 .frame(width: 30)
-
+            
             // 任务内容
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(task.title ?? "未知任务")
-                        .font(.headline)
-                        .strikethrough(task.isCompleted)
-                        .foregroundColor(task.isCompleted ? .secondary : .primary)
-
+                Text(task.title ?? "未知任务")
+                    .font(.headline)
+                    .strikethrough(task.isCompleted)
+                    .foregroundColor(task.isCompleted ? .secondary : .primary)
+                
                     if task.isFixed {
                         Image(systemName: "pin.fill")
                             .font(.caption)
@@ -436,17 +443,17 @@ struct DailyTaskRow: View {
                         .background(taskType.color.opacity(0.2))
                         .foregroundColor(taskType.color)
                         .clipShape(Capsule())
-
+                    
                     Spacer()
-
+                    
                     Text("¥\(task.rewardAmount, specifier: "%.0f")")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.green)
                 }
             }
-
+            
             Spacer()
-
+            
             // 完成按钮
             Button(action: toggleCompletion) {
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
@@ -461,7 +468,7 @@ struct DailyTaskRow: View {
             onEdit?()
         }
     }
-
+    
     private func toggleCompletion() {
         withAnimation {
             task.isCompleted.toggle()
@@ -560,18 +567,18 @@ struct AddDailyTaskView: View {
     @EnvironmentObject private var dataManager: PersistenceController
 
     let selectedDate: Date
-
+    
     @State private var title = ""
     @State private var selectedTaskType = TaskType.other
     @State private var rewardAmount = 10.0
     @State private var isFixed = false
-
+    
     var body: some View {
         NavigationView {
             Form {
                 Section("任务信息") {
                     TextField("任务标题", text: $title)
-
+                    
                     Picker("任务类型", selection: $selectedTaskType) {
                         ForEach(TaskType.allCases, id: \.self) { taskType in
                             HStack {
@@ -583,7 +590,7 @@ struct AddDailyTaskView: View {
                         }
                     }
                     .pickerStyle(MenuPickerStyle())
-
+                    
                     HStack {
                         Text("奖励金额")
                         Spacer()
@@ -612,43 +619,43 @@ struct AddDailyTaskView: View {
                         type: .exercise,
                         amount: 20,
                         onSelect: { title, type, amount in
-                            self.title = title
-                            self.selectedTaskType = type
-                            self.rewardAmount = amount
-                        }
+                        self.title = title
+                        self.selectedTaskType = type
+                        self.rewardAmount = amount
+                    }
                     )
-
+                    
                     PresetTaskButton(
                         title: "阅读1小时",
                         type: .reading,
                         amount: 15,
                         onSelect: { title, type, amount in
-                            self.title = title
-                            self.selectedTaskType = type
-                            self.rewardAmount = amount
-                        }
+                        self.title = title
+                        self.selectedTaskType = type
+                        self.rewardAmount = amount
+                    }
                     )
-
+                    
                     PresetTaskButton(
                         title: "健康餐食",
                         type: .health,
                         amount: 10,
                         onSelect: { title, type, amount in
-                            self.title = title
-                            self.selectedTaskType = type
-                            self.rewardAmount = amount
-                        }
+                        self.title = title
+                        self.selectedTaskType = type
+                        self.rewardAmount = amount
+                    }
                     )
-
+                    
                     PresetTaskButton(
                         title: "学习2小时",
                         type: .study,
                         amount: 30,
                         onSelect: { title, type, amount in
-                            self.title = title
-                            self.selectedTaskType = type
-                            self.rewardAmount = amount
-                        }
+                        self.title = title
+                        self.selectedTaskType = type
+                        self.rewardAmount = amount
+                    }
                     )
                 }
             }
@@ -660,7 +667,7 @@ struct AddDailyTaskView: View {
                         dismiss()
                     }
                 }
-
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("保存") {
                         saveTask()
@@ -670,7 +677,7 @@ struct AddDailyTaskView: View {
             }
         }
     }
-
+    
     private func saveTask() {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: selectedDate)
@@ -700,7 +707,7 @@ struct AddDailyTaskView: View {
                 template.isActive = true
             }
         }
-
+        
         dataManager.save()
         dismiss()
     }
@@ -747,11 +754,11 @@ struct EmptyStateView: View {
             Image(systemName: "checklist")
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
-
+            
             Text(emptyStateTitle)
                 .font(.system(size: 22, weight: .medium))
                 .foregroundColor(.secondary)
-
+            
             Text(emptyStateMessage)
                 .font(.body)
                 .foregroundColor(.secondary)
@@ -1017,14 +1024,21 @@ struct TaskHistoryView: View {
                     newTask.id = UUID()
                     newTask.title = template.title
                     newTask.taskType = template.taskType
+                    // 保存创建时的模板金额，之后不会随模板变化而变化
                     newTask.rewardAmount = template.rewardAmount
                     newTask.originalRewardAmount = template.rewardAmount
                     newTask.isFixed = true
                     newTask.isCompleted = false
                     newTask.taskDate = startOfDay
                     newTask.createdDate = Date()
+                    // 记录任务创建时的模板信息，用于历史追踪
+                    print("💰 创建任务金额: ¥\(template.rewardAmount) (模板当前金额)")
                 } else {
                     print("✅ 固定任务已存在: \(template.title ?? "")")
+                    // 历史任务保持原有金额，不受模板变化影响
+                    for task in existingTasks {
+                        print("   📋 历史任务金额: ¥\(task.rewardAmount)")
+                    }
                 }
             } catch {
                 print("❌ 检查固定任务时出错: \(error)")
@@ -1431,14 +1445,6 @@ struct EditDailyTaskView: View {
                         }
                     }
                     
-                    if task.isCompleted, let completedDate = task.completedDate {
-                        HStack {
-                            Text("完成时间")
-                            Spacer()
-                            Text(completedDate, style: .relative)
-                                .foregroundColor(.green)
-                        }
-                    }
                 }
             }
             .navigationTitle("编辑任务")
