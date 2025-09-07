@@ -821,53 +821,49 @@ struct FixedTaskConfigView: View {
                         let (title, category, amount) = task
                         let isActive = getTaskActiveStatus(title: title)
 
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(title)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-
-                                Text(category)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                        Button(action: {
+                            if let existingTemplate = templates.first(where: { $0.title == title }) {
+                                editingTemplate = existingTemplate
+                            } else {
+                                // 创建新的模板
+                                let template = FixedTaskTemplate(context: viewContext)
+                                template.id = UUID()
+                                template.title = title
+                                template.taskType = category
+                                template.rewardAmount = amount
+                                template.isActive = false
+                                editingTemplate = template
                             }
+                            showingTemplateEditor = true
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(title)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
 
-                            Spacer()
-
-                            Text("¥\(amount, specifier: "%.0f")")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.green)
-
-                            Toggle("", isOn: Binding(
-                                get: { isActive },
-                                set: { newValue in
-                                    toggleTask(title: title, category: category, amount: amount, isActive: newValue)
+                                    Text(category)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
                                 }
-                            ))
-                            .labelsHidden()
 
-                            Button(action: {
-                                if let existingTemplate = templates.first(where: { $0.title == title }) {
-                                    editingTemplate = existingTemplate
-                                } else {
-                                    // 创建新的模板
-                                    let template = FixedTaskTemplate(context: viewContext)
-                                    template.id = UUID()
-                                    template.title = title
-                                    template.taskType = category
-                                    template.rewardAmount = amount
-                                    template.isActive = false
-                                    editingTemplate = template
-                                }
-                                showingTemplateEditor = true
-                            }) {
-                                Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
-                                    .frame(width: 30, height: 30)
+                                Spacer()
+
+                                Text("¥\(amount, specifier: "%.0f")")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(.green)
+
+                                Toggle("", isOn: Binding(
+                                    get: { isActive },
+                                    set: { newValue in
+                                        toggleTask(title: title, category: category, amount: amount, isActive: newValue)
+                                    }
+                                ))
+                                .labelsHidden()
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .padding(.vertical, 8)
                         }
-                        .padding(.vertical, 8)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 
