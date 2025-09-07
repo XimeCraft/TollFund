@@ -821,58 +821,53 @@ struct FixedTaskConfigView: View {
                         let (title, category, amount) = task
                         let isActive = getTaskActiveStatus(title: title)
 
-                        if let existingTemplate = templates.first(where: { $0.title == title }) {
-                            FixedTaskTemplateRow(
-                                template: existingTemplate,
-                                onEdit: {
-                                    editingTemplate = existingTemplate
-                                    showingTemplateEditor = true
-                                }
-                            )
-                        } else {
-                            // 如果模板不存在，创建一个临时的
-                            let buttonAction = {
-                                // 创建新的模板
-                                let template = FixedTaskTemplate(context: viewContext)
-                                template.id = UUID()
-                                template.title = title
-                                template.taskType = category
-                                template.rewardAmount = amount
-                                template.isActive = false
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(title)
+                                    .font(.body)
+                                    .foregroundColor(.primary)
 
-                                editingTemplate = template
-                                showingTemplateEditor = true
+                                Text(category)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
 
-                            Button(action: buttonAction) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(title)
-                                            .font(.body)
-                                            .foregroundColor(.primary)
-                                        Text(category)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
+                            Spacer()
 
-                                    Spacer()
+                            Text("¥\(amount, specifier: "%.0f")")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.green)
 
-                                    Text("¥\(amount, specifier: "%.0f")")
-                                        .font(.headline)
-                                        .foregroundColor(.green)
-
-                                    Toggle("", isOn: Binding(
-                                        get: { isActive },
-                                        set: { newValue in
-                                            toggleTask(title: title, category: category, amount: amount, isActive: newValue)
-                                        }
-                                    ))
-                                    .labelsHidden()
+                            Toggle("", isOn: Binding(
+                                get: { isActive },
+                                set: { newValue in
+                                    toggleTask(title: title, category: category, amount: amount, isActive: newValue)
                                 }
-                                .padding(.vertical, 4)
+                            ))
+                            .labelsHidden()
+
+                            Button(action: {
+                                if let existingTemplate = templates.first(where: { $0.title == title }) {
+                                    editingTemplate = existingTemplate
+                                } else {
+                                    // 创建新的模板
+                                    let template = FixedTaskTemplate(context: viewContext)
+                                    template.id = UUID()
+                                    template.title = title
+                                    template.taskType = category
+                                    template.rewardAmount = amount
+                                    template.isActive = false
+                                    editingTemplate = template
+                                }
+                                showingTemplateEditor = true
+                            }) {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.blue)
+                                    .frame(width: 30, height: 30)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.vertical, 8)
                     }
                 }
                 
@@ -1183,13 +1178,46 @@ struct EditFixedTaskTemplateView: View {
                     }
                     .pickerStyle(MenuPickerStyle())
 
-                    HStack {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("奖励金额")
-                        Spacer()
-                        TextField("金额", value: $rewardAmount, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                        Text("元")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                if rewardAmount > 0 {
+                                    rewardAmount = max(0, rewardAmount - 1)
+                                }
+                            }) {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Text("¥\(rewardAmount, specifier: "%.0f")")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.green)
+                                .frame(minWidth: 80)
+                                .multilineTextAlignment(.center)
+
+                            Button(action: {
+                                rewardAmount += 1
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.green)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+
+                        Text("轻触 + 或 - 按钮调整金额")
+                            .font(.caption)
                             .foregroundColor(.secondary)
                     }
 
