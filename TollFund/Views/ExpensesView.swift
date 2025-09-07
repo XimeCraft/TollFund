@@ -259,7 +259,7 @@ struct AddExpenseView: View {
                     DatePicker("消费日期", selection: $date, displayedComponents: .date)
                 }
                 
-                Section(header: Text("常用消费")) {
+                Section("常用消费") {
                     PresetExpenseButton(
                         title: "买游戏",
                         category: .games,
@@ -280,25 +280,7 @@ struct AddExpenseView: View {
                         self.amount = amount
                     }
                     
-                    PresetExpenseButton(
-                        title: "买书",
-                        category: .books,
-                        amount: 50
-                    ) { title, category, amount in
-                        self.title = title
-                        self.selectedCategory = category
-                        self.amount = amount
-                    }
                     
-                    PresetExpenseButton(
-                        title: "看电影",
-                        category: .entertainment,
-                        amount: 40
-                    ) { title, category, amount in
-                        self.title = title
-                        self.selectedCategory = category
-                        self.amount = amount
-                    }
                     
                     PresetExpenseButton(
                         title: "买耳机",
@@ -310,15 +292,6 @@ struct AddExpenseView: View {
                         self.amount = amount
                     }
                     
-                    PresetExpenseButton(
-                        title: "买衣服",
-                        category: .clothes,
-                        amount: 150
-                    ) { title, category, amount in
-                        self.title = title
-                        self.selectedCategory = category
-                        self.amount = amount
-                    }
                 }
             }
             .navigationTitle("添加消费记录")
