@@ -1230,6 +1230,21 @@ struct EditFixedTaskTemplateView: View {
                     .frame(maxWidth: .infinity)
                     .foregroundColor(.blue)
                 }
+
+                Section {
+                    Button("删除模板", role: .destructive) {
+                        showingDeleteAlert = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .alert("确认删除", isPresented: $showingDeleteAlert) {
+                        Button("取消", role: .cancel) { }
+                        Button("删除", role: .destructive) {
+                            deleteTemplate()
+                        }
+                    } message: {
+                        Text("确定要删除这个任务模板吗？此操作无法撤销。")
+                    }
+                }
             }
             .navigationTitle("编辑任务模板")
             .navigationBarTitleDisplayMode(.inline)
@@ -1239,21 +1254,6 @@ struct EditFixedTaskTemplateView: View {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(role: .destructive) {
-                        showingDeleteAlert = true
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                }
-            }
-            .alert("确认删除", isPresented: $showingDeleteAlert) {
-                Button("取消", role: .cancel) { }
-                Button("删除", role: .destructive) {
-                    deleteTemplate()
-                }
-            } message: {
-                Text("确定要删除这个任务模板吗？此操作无法撤销。")
             }
         }
     }
@@ -1355,6 +1355,21 @@ struct EditDailyTaskView: View {
                     }
                     
                 }
+
+                Section {
+                    Button("删除任务", role: .destructive) {
+                        showingDeleteAlert = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .alert("确认删除", isPresented: $showingDeleteAlert) {
+                        Button("取消", role: .cancel) { }
+                        Button("删除", role: .destructive) {
+                            deleteTask()
+                        }
+                    } message: {
+                        Text("确定要删除这个任务吗？此操作无法撤销。")
+                    }
+                }
             }
             .navigationTitle("编辑任务")
             .navigationBarTitleDisplayMode(.inline)
@@ -1366,27 +1381,11 @@ struct EditDailyTaskView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        Button(role: .destructive) {
-                            showingDeleteAlert = true
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-
-                        Button("保存") {
-                            saveTask()
-                        }
-                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button("保存") {
+                        saveTask()
                     }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-            }
-            .alert("确认删除", isPresented: $showingDeleteAlert) {
-                Button("取消", role: .cancel) { }
-                Button("删除", role: .destructive) {
-                    deleteTask()
-                }
-            } message: {
-                Text("确定要删除这个任务吗？此操作无法撤销。")
             }
         }
     }

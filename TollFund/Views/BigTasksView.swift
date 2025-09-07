@@ -52,14 +52,9 @@ struct BigTasksView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .navigationTitle("挑战")
+            .navigationTitle(selectedStatus.rawValue)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(selectedStatus.rawValue)
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddTask = true }) {
                         Image(systemName: "plus")
@@ -192,6 +187,7 @@ struct BigTaskDetailView: View {
     @State private var editedProgress: Double
     @State private var editedCategory: ChallengeCategory?
     @State private var editedSubcategory: ChallengeSubcategory?
+    @State private var showingDeleteAlert = false
     
     var computedStatus: BigTaskStatus {
         if editedProgress <= 0 {
@@ -301,6 +297,21 @@ struct BigTaskDetailView: View {
                         }
                     }
                 }
+
+                Section {
+                    Button("删除挑战", role: .destructive) {
+                        showingDeleteAlert = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .alert("确认删除", isPresented: $showingDeleteAlert) {
+                        Button("取消", role: .cancel) { }
+                        Button("删除", role: .destructive) {
+                            deleteTask()
+                        }
+                    } message: {
+                        Text("确定要删除这个挑战吗？此操作无法撤销。")
+                    }
+                }
             }
             .navigationTitle("编辑挑战")
             .navigationBarTitleDisplayMode(.inline)
@@ -310,7 +321,7 @@ struct BigTaskDetailView: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完成") {
                         saveChanges()
@@ -344,6 +355,17 @@ struct BigTaskDetailView: View {
         } catch {
             print("❌ 保存挑战失败: \(error)")
         }
+    }
+
+    private func deleteTask() {
+        viewContext.delete(task)
+        do {
+            try viewContext.save()
+            print("✅ 挑战删除成功")
+        } catch {
+            print("❌ 删除挑战失败: \(error)")
+        }
+        dismiss()
     }
 }
 
