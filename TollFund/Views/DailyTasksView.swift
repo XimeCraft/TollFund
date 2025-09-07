@@ -314,6 +314,28 @@ struct DailyTasksView: View {
             }
         }
     }
+
+    private func loadTasksForHistoryDate(_ date: Date) {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+
+        let fetchRequest: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "(taskDate >= %@) AND (taskDate < %@)", startOfDay as NSDate, endOfDay as NSDate)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DailyTask.isFixed, ascending: false), NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)]
+
+        do {
+            let tasks = try viewContext.fetch(fetchRequest)
+            historyTasksForSelectedDate = tasks
+            print("📚 加载历史日期 \(startOfDay) 的任务: \(tasks.count) 个任务")
+            for task in tasks {
+                print("   - \(task.title ?? "") (\(task.isFixed ? "固定" : "临时"))")
+            }
+        } catch {
+            print("❌ 加载历史任务失败: \(error)")
+            historyTasksForSelectedDate = []
+        }
+    }
 }
 
 // MARK: - 日期选择器视图
@@ -880,27 +902,6 @@ struct FixedTaskConfigView: View {
         }
     }
 
-    private func loadTasksForHistoryDate(_ date: Date) {
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-
-        let fetchRequest: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "(taskDate >= %@) AND (taskDate < %@)", startOfDay as NSDate, endOfDay as NSDate)
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DailyTask.isFixed, ascending: false), NSSortDescriptor(keyPath: \DailyTask.createdDate, ascending: true)]
-
-        do {
-            let tasks = try viewContext.fetch(fetchRequest)
-            historyTasksForSelectedDate = tasks
-            print("📚 加载历史日期 \(startOfDay) 的任务: \(tasks.count) 个任务")
-            for task in tasks {
-                print("   - \(task.title ?? "") (\(task.isFixed ? "固定" : "临时"))")
-            }
-        } catch {
-            print("❌ 加载历史任务失败: \(error)")
-            historyTasksForSelectedDate = []
-        }
-    }
 }
 
 // MARK: - 任务历史视图 (已移除，功能整合到主视图)
