@@ -794,7 +794,13 @@ struct FixedTaskConfigView: View {
         entity: FixedTaskTemplate.entity(),
         sortDescriptors: [NSSortDescriptor(keyPath: \FixedTaskTemplate.title, ascending: true)]
     ) private var templates: FetchedResults<FixedTaskTemplate>
-    
+
+    // 编辑状态
+    @State private var showingTemplateEditor = false
+    @State private var editingTemplateTitle = ""
+    @State private var editingTemplateCategory = ""
+    @State private var editingTemplateAmount = 0.0
+
     // 预设的固定任务列表
     private let defaultFixedTasks = [
         ("12点前睡觉", "健康", 2.0),
@@ -816,31 +822,22 @@ struct FixedTaskConfigView: View {
                     ForEach(defaultFixedTasks, id: \.0) { task in
                         let (title, category, amount) = task
                         let isActive = getTaskActiveStatus(title: title)
-                        
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(title)
-                                    .font(.body)
-                                Text(category)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+
+                        FixedTaskTemplateRow(
+                            title: title,
+                            category: category,
+                            amount: amount,
+                            isActive: isActive,
+                            onToggle: { newValue in
+                                toggleTask(title: title, category: category, amount: amount, isActive: newValue)
+                            },
+                            onEdit: {
+                                editingTemplateTitle = title
+                                editingTemplateCategory = category
+                                editingTemplateAmount = amount
+                                showingTemplateEditor = true
                             }
-                            
-                            Spacer()
-                            
-                            Text("¥\(amount, specifier: "%.0f")")
-                                .font(.headline)
-                                .foregroundColor(.green)
-                            
-                            Toggle("", isOn: Binding(
-                                get: { isActive },
-                                set: { newValue in
-                                    toggleTask(title: title, category: category, amount: amount, isActive: newValue)
-                                }
-                            ))
-                            .labelsHidden()
-                        }
-                        .padding(.vertical, 4)
+                        )
                     }
                 }
                 
@@ -859,6 +856,20 @@ struct FixedTaskConfigView: View {
             }
             .onAppear {
                 createDefaultTemplatesIfNeeded()
+            }
+            .sheet(isPresented: $showingTemplateEditor) {
+                EditFixedTaskTemplateView(
+                    title: $editingTemplateTitle,
+                    category: $editingTemplateCategory,
+                    amount: $editingTemplateAmount,
+                    onSave: { newTitle, newCategory, newAmount in
+                        updateTemplate(title: editingTemplateTitle, newTitle: newTitle, newCategory: newCategory, newAmount: newAmount)
+                        showingTemplateEditor = false
+                    },
+                    onCancel: {
+                        showingTemplateEditor = false
+                    }
+                )
             }
         }
     }
@@ -883,7 +894,25 @@ struct FixedTaskConfigView: View {
         }
         dataManager.save()
     }
-    
+
+    // 更新模板
+    private func updateTemplate(title: String, newTitle: String, newCategory: String, newAmount: Double) {
+        if let existingTemplate = templates.first(where: { $0.title == title }) {
+            existingTemplate.title = newTitle
+            existingTemplate.taskType = newCategory
+            existingTemplate.rewardAmount = newAmount
+        } else {
+            // 如果模板不存在，创建新的
+            let template = FixedTaskTemplate(context: viewContext)
+            template.id = UUID()
+            template.title = newTitle
+            template.taskType = newCategory
+            template.rewardAmount = newAmount
+            template.isActive = false
+        }
+        dataManager.save()
+    }
+
     // 创建默认模板（仅在首次使用时）
     private func createDefaultTemplatesIfNeeded() {
         // 只在完全没有模板时才创建，避免重复创建
@@ -1370,6 +1399,92 @@ struct TaskHistoryContent: View {
         formatter.dateFormat = "yyyy年MM月dd日 EEEE"
         formatter.locale = Locale(identifier: "zh_CN")
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - 固定任务模板行视图
+struct FixedTaskTemplateRow: View {
+    let title: String
+    let category: String
+    let amount: Double
+    let isActive: Bool
+    let onToggle: (Bool) -> Void
+    let onEdit: () -> Void
+
+    var body: some View {
+        Button(action: onEdit) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                    Text(category)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Text("¥\(amount, specifier: "%.0f")")
+                    .font(.headline)
+                    .foregroundColor(.green)
+
+                Toggle("", isOn: Binding(
+                    get: { isActive },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - 编辑固定任务模板视图
+struct EditFixedTaskTemplateView: View {
+    @Binding var title: String
+    @Binding var category: String
+    @Binding var amount: Double
+    let onSave: (String, String, Double) -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("任务信息")) {
+                    TextField("任务标题", text: $title)
+                    TextField("任务类型", text: $category)
+                    HStack {
+                        Text("奖励金额")
+                        Spacer()
+                        TextField("金额", value: $amount, format: .number)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                        Text("元")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("编辑任务模板")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("取消") {
+                        onCancel()
+                    }
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        onSave(title, category, amount)
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
     }
 }
 

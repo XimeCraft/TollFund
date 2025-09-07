@@ -372,37 +372,6 @@ struct AddBigTaskView: View {
                     }
                 }
                 
-                Section(header: Text("预设任务")) {
-                    PresetBigTaskButton(
-                        title: "完成Swift编程课程",
-                        description: "学习完整的Swift编程语言和iOS开发",
-                        amount: 500
-                    ) { title, desc, amount in
-                        self.title = title
-                        self.description = desc
-                        self.rewardAmount = amount
-                    }
-                    
-                    PresetBigTaskButton(
-                        title: "读完10本专业书籍",
-                        description: "在指定时间内阅读完成10本专业相关书籍",
-                        amount: 300
-                    ) { title, desc, amount in
-                        self.title = title
-                        self.description = desc
-                        self.rewardAmount = amount
-                    }
-                    
-                    PresetBigTaskButton(
-                        title: "完成毕业论文",
-                        description: "按时完成高质量的毕业论文并通过答辩",
-                        amount: 1000
-                    ) { title, desc, amount in
-                        self.title = title
-                        self.description = desc
-                        self.rewardAmount = amount
-                    }
-                }
             }
             .navigationTitle("添加挑战")
             .navigationBarTitleDisplayMode(.inline)
@@ -441,38 +410,6 @@ struct AddBigTaskView: View {
     }
 }
 
-struct PresetBigTaskButton: View {
-    let title: String
-    let description: String
-    let amount: Double
-    let onSelect: (String, String, Double) -> Void
-    
-    var body: some View {
-        Button(action: {
-            onSelect(title, description, amount)
-        }) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(title)
-                        .foregroundColor(.primary)
-                        .font(.system(size: 15, weight: .medium))
-                    
-                    Spacer()
-                    
-                    Text("¥\(amount, specifier: "%.0f")")
-                        .foregroundColor(.green)
-                        .font(.system(size: 15, weight: .medium))
-                }
-                
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 struct BigTaskEmptyStateView: View {
     let status: BigTaskStatus
