@@ -12,6 +12,7 @@ struct ExpensesView: View {
     
     @State private var showingAddExpense = false
     @State private var selectedCategory: ExpenseCategory? = nil
+    @State private var editingExpense: Expense?
     
     var filteredExpenses: [Expense] {
         if let selectedCategory = selectedCategory {
@@ -42,8 +43,11 @@ struct ExpensesView: View {
                     List {
                         ForEach(filteredExpenses, id: \.id) { expense in
                             ExpenseRow(expense: expense)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    editingExpense = expense
+                                }
                         }
-                        .onDelete(perform: deleteExpenses)
                     }
                     .listStyle(PlainListStyle())
                 }
@@ -59,12 +63,22 @@ struct ExpensesView: View {
             .sheet(isPresented: $showingAddExpense) {
                 AddExpenseView()
             }
+            .sheet(item: $editingExpense) { expense in
+                EditExpenseView(expense: expense)
+            }
         }
     }
     
     private func deleteExpenses(offsets: IndexSet) {
         withAnimation {
             offsets.map { filteredExpenses[$0] }.forEach(viewContext.delete)
+            dataManager.save()
+        }
+    }
+
+    private func deleteExpense(_ expense: Expense) {
+        withAnimation {
+            viewContext.delete(expense)
             dataManager.save()
         }
     }
@@ -215,6 +229,13 @@ struct ExpenseRow: View {
                 .foregroundColor(.red)
         }
         .padding(.vertical, 8)
+        .contextMenu {
+            Button(role: .destructive) {
+                deleteExpense(expense)
+            } label: {
+                Label("删除", systemImage: "trash")
+            }
+        }
     }
 }
 
@@ -320,6 +341,146 @@ struct ExpenseEmptyStateView: View {
                 .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - 编辑消费视图
+struct EditExpenseView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var dataManager: PersistenceController
+
+    @ObservedObject var expense: Expense
+
+    @State private var title: String
+    @State private var selectedCategory: ExpenseCategory
+    @State private var amount: Double
+    @State private var date: Date
+    @State private var showingDeleteAlert = false
+    @State private var isEditingAmount = false
+
+    init(expense: Expense) {
+        self.expense = expense
+        self._title = State(initialValue: expense.title ?? "")
+        self._selectedCategory = State(initialValue: ExpenseCategory(rawValue: expense.category ?? "") ?? .other)
+        self._amount = State(initialValue: expense.amount)
+        self._date = State(initialValue: expense.date ?? Date())
+    }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("消费信息") {
+                    TextField("消费标题", text: $title)
+
+                    Picker("类别", selection: $selectedCategory) {
+                        ForEach(ExpenseCategory.allCases, id: \.self) { category in
+                            HStack {
+                                Image(systemName: category.icon).foregroundColor(category.color)
+                                Text(category.rawValue)
+                            }.tag(category)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+
+                    HStack {
+                        Text("金额")
+                        Spacer()
+                        if isEditingAmount {
+                            TextField("输入金额", value: $amount, format: .number)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 100)
+                                .onSubmit {
+                                    isEditingAmount = false
+                                }
+                        } else {
+                            Button(action: {
+                                isEditingAmount = true
+                            }) {
+                                Text("¥\(amount, specifier: "%.2f")")
+                                    .foregroundColor(.red)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        Text("元").foregroundColor(.secondary)
+                    }
+
+                    DatePicker("消费日期", selection: $date, displayedComponents: .date)
+                }
+
+                Section {
+                    Button("保存修改") {
+                        saveChanges()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .foregroundColor(.blue)
+                }
+
+                Section {
+                    Button("删除消费", role: .destructive) {
+                        showingDeleteAlert = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .alert("确认删除", isPresented: $showingDeleteAlert) {
+                        Button("取消", role: .cancel) { }
+                        Button("删除", role: .destructive) {
+                            deleteExpense()
+                        }
+                    } message: {
+                        Text("确定要删除这条消费记录吗？此操作无法撤销。")
+                    }
+                }
+            }
+            .navigationTitle("编辑消费")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完成") {
+                        saveChanges()
+                        dismiss()
+                    }
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+
+    private func saveChanges() {
+        expense.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        expense.category = selectedCategory.rawValue
+        expense.amount = amount
+        expense.date = date
+
+        do {
+            try viewContext.save()
+            print("✅ 消费编辑保存成功")
+        } catch {
+            print("❌ 保存消费编辑失败: \(error)")
+        }
+    }
+
+    private func deleteExpense() {
+        viewContext.delete(expense)
+        do {
+            try viewContext.save()
+            print("✅ 消费删除成功")
+        } catch {
+            print("❌ 删除消费失败: \(error)")
+        }
+        dismiss()
     }
 }
 

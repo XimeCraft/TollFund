@@ -188,6 +188,7 @@ struct BigTaskDetailView: View {
     @State private var editedCategory: ChallengeCategory?
     @State private var editedSubcategory: ChallengeSubcategory?
     @State private var showingDeleteAlert = false
+    @State private var isEditingRewardAmount = false
     
     var computedStatus: BigTaskStatus {
         if editedProgress <= 0 {
@@ -234,9 +235,29 @@ struct BigTaskDetailView: View {
                     HStack {
                         Text("奖励金额")
                         Spacer()
-                        TextField("金额", value: $editedRewardAmount, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
+                        if isEditingRewardAmount {
+                            TextField("输入金额", value: $editedRewardAmount, format: .number)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 100)
+                                .onSubmit {
+                                    isEditingRewardAmount = false
+                                }
+                        } else {
+                            Button(action: {
+                                isEditingRewardAmount = true
+                            }) {
+                                Text("¥\(editedRewardAmount, specifier: "%.0f")")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                         Text("元")
                             .foregroundColor(.secondary)
                     }
