@@ -18,8 +18,8 @@ struct DailyTasksView: View {
     @State private var historyTasksForSelectedDate: [DailyTask] = []
     @State private var showingHistoryDatePicker = false
 
-    // 页面切换状态
-    @State private var selectedPage = 0
+    // 页面选择状态
+    @State private var selectedTab = 0
 
     // 使用 @FetchRequest 来自动监听数据变化
     @FetchRequest(
@@ -66,49 +66,9 @@ struct DailyTasksView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 页面切换按钮
-                HStack(spacing: 0) {
-                    Button(action: {
-                        withAnimation {
-                            selectedPage = 0
-                        }
-                    }) {
-                        VStack(spacing: 4) {
-                            Text("今日任务")
-                                .font(.system(size: 14, weight: selectedPage == 0 ? .semibold : .regular))
-                                .foregroundColor(selectedPage == 0 ? .primary : .secondary)
-                            Rectangle()
-                                .fill(selectedPage == 0 ? Color.blue : Color.clear)
-                                .frame(height: 2)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    Button(action: {
-                        withAnimation {
-                            selectedPage = 1
-                        }
-                    }) {
-                        VStack(spacing: 4) {
-                            Text("历史记录")
-                                .font(.system(size: 14, weight: selectedPage == 1 ? .semibold : .regular))
-                                .foregroundColor(selectedPage == 1 ? .primary : .secondary)
-                            Rectangle()
-                                .fill(selectedPage == 1 ? Color.blue : Color.clear)
-                                .frame(height: 2)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                .background(Color(.systemBackground))
-
-                // 页面内容
-                ZStack {
+            VStack {
+                // 左右滑动翻页视图
+                TabView(selection: $selectedTab) {
                     // 第一页：每日任务
                     VStack {
                         // 日期选择器
@@ -156,18 +116,24 @@ struct DailyTasksView: View {
                             }
                         }
                     }
-                    .opacity(selectedPage == 0 ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.3), value: selectedPage)
+                    .tabItem {
+                        Text("今日任务")
+                    }
+                    .tag(0)
 
                     // 第二页：历史记录
                     VStack {
                         TaskHistoryContent(selectedDate: $historySelectedDate, tasksForSelectedDate: $historyTasksForSelectedDate, showingDatePicker: $showingHistoryDatePicker, editingTask: $editingTask, onDateChange: loadTasksForHistoryDate)
                     }
-                    .opacity(selectedPage == 1 ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.3), value: selectedPage)
+                    .tabItem {
+                        Text("历史记录")
+                    }
+                    .tag(1)
                 }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .navigationTitle("每日任务")
+            .navigationTitle(selectedTab == 0 ? "今日任务" : "历史记录")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing:
                 HStack(spacing: 16) {
                     // 任务配置按钮（齿轮）

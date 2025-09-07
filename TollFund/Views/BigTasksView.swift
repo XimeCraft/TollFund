@@ -4,91 +4,62 @@ import CoreData
 struct BigTasksView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var dataManager: PersistenceController
-
+    
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \BigTask.createdDate, ascending: false)],
         animation: .default)
     private var bigTasks: FetchedResults<BigTask>
-
+    
     @State private var showingAddTask = false
-
-    // 为每个状态创建过滤后的任务列表
-    var notStartedTasks: [BigTask] {
-        bigTasks.filter { BigTaskStatus(rawValue: $0.status ?? "") == .notStarted }
+    @State private var selectedStatus = BigTaskStatus.inProgress
+    
+    var filteredTasks: [BigTask] {
+        bigTasks.filter { task in
+            BigTaskStatus(rawValue: task.status ?? "") == selectedStatus
+        }
     }
-
-    var inProgressTasks: [BigTask] {
-        bigTasks.filter { BigTaskStatus(rawValue: $0.status ?? "") == .inProgress }
-    }
-
-    var completedTasks: [BigTask] {
-        bigTasks.filter { BigTaskStatus(rawValue: $0.status ?? "") == .completed }
-    }
-
+    
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 页面指示器
-                HStack {
-                    Spacer()
-                    Text("未开始")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(12)
-
-                    Spacer()
-
-                    Text("进行中")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(12)
-
-                    Spacer()
-
-                    Text("已完成")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(12)
-
-                    Spacer()
-                }
-                .padding(.vertical, 8)
-                .background(Color(.systemBackground))
-
-                // 左右滑动页面
-                TabView {
-                    // 未开始页面
-                    TaskListView(tasks: notStartedTasks, emptyMessage: "还没有未开始的挑战")
-                        .tabItem {
-                            Text("未开始")
+            VStack {
+                // 左右滑动翻页视图
+                TabView(selection: $selectedStatus) {
+                    ForEach(BigTaskStatus.allCases, id: \.self) { status in
+                        VStack {
+                            if getTasksForStatus(status).isEmpty {
+                                BigTaskEmptyStateView(status: status)
+                            } else {
+                                List {
+                                    ForEach(getTasksForStatus(status), id: \.id) { task in
+                                        BigTaskRow(task: task)
+                                            .swipeActions(edge: .trailing) {
+                                                Button(role: .destructive) {
+                                                    deleteTask(task)
+                                                } label: {
+                                                    Label("删除", systemImage: "trash")
+                                                }
+                                            }
+                                    }
+                                }
+                                .listStyle(PlainListStyle())
+                            }
                         }
-
-                    // 进行中页面
-                    TaskListView(tasks: inProgressTasks, emptyMessage: "还没有进行中的挑战")
                         .tabItem {
-                            Text("进行中")
+                            Text(status.rawValue)
                         }
-
-                    // 已完成页面
-                    TaskListView(tasks: completedTasks, emptyMessage: "还没有完成的挑战")
-                        .tabItem {
-                            Text("已完成")
-                        }
+                        .tag(status)
+                    }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .navigationTitle("挑战")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text(selectedStatus.rawValue)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddTask = true }) {
                         Image(systemName: "plus")
@@ -100,65 +71,22 @@ struct BigTasksView: View {
             }
         }
     }
-    
-}
 
-// MARK: - 任务列表视图组件
-struct TaskListView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var dataManager: PersistenceController
-
-    let tasks: [BigTask]
-    let emptyMessage: String
-
-    var body: some View {
-        if tasks.isEmpty {
-            VStack(spacing: 16) {
-                Image(systemName: "target")
-                    .font(.system(size: 60))
-                    .foregroundColor(.secondary)
-
-                Text(emptyMessage)
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            List {
-                ForEach(tasks, id: \.id) { task in
-                    BigTaskRow(task: task)
-                }
-                .onDelete(perform: deleteTasks)
-            }
-            .listStyle(PlainListStyle())
+    private func getTasksForStatus(_ status: BigTaskStatus) -> [BigTask] {
+        bigTasks.filter { task in
+            BigTaskStatus(rawValue: task.status ?? "") == status
         }
     }
 
-    private func deleteTasks(offsets: IndexSet) {
+    private func deleteTask(_ task: BigTask) {
         withAnimation {
-            offsets.map { tasks[$0] }.forEach(viewContext.delete)
+            viewContext.delete(task)
             dataManager.save()
         }
     }
+    
 }
 
-// MARK: - 状态筛选器组件（已移除，使用页面滑动替代）
-struct StatusFilterPicker: View {
-    @Binding var selectedStatus: BigTaskStatus
-
-    var body: some View {
-        Picker("状态", selection: $selectedStatus) {
-            ForEach(BigTaskStatus.allCases, id: \.self) { status in
-                Text(status.rawValue)
-                    .tag(status)
-            }
-        }
-        .pickerStyle(SegmentedPickerStyle())
-        .padding(.horizontal)
-    }
-}
 
 struct BigTaskRow: View {
     @ObservedObject var task: BigTask
@@ -171,80 +99,81 @@ struct BigTaskRow: View {
     }
     
     var body: some View {
-        Button(action: { showingDetailView = true }) {
-            VStack(alignment: .leading, spacing: 12) {
-                // 标题和状态
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(task.title ?? "未知挑战")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        if let description = task.taskDescription, !description.isEmpty {
-                            Text(description)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                        
-                        // TODO: Temporarily commented out due to Core Data issues
-                        // 类别和子类别标签
-                        // if let category = task.category, let subcategory = task.subcategory {
-                        //     HStack(spacing: 4) {
-                        //         Text(category)
-                        //             .font(.caption)
-                        //             .padding(.horizontal, 6)
-                        //             .padding(.vertical, 2)
-                        //             .background(Color.blue.opacity(0.1))
-                        //             .foregroundColor(.blue)
-                        //             .clipShape(Capsule())
-                        //         
-                        //         Text(subcategory)
-                        //             .font(.caption)
-                        //             .padding(.horizontal, 6)
-                        //             .padding(.vertical, 2)
-                        //             .background(Color.green.opacity(0.1))
-                        //             .foregroundColor(.green)
-                        //             .clipShape(Capsule())
-                        //     }
-                        // }
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(taskStatus.rawValue)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(taskStatus.color.opacity(0.2))
-                            .foregroundColor(taskStatus.color)
-                            .clipShape(Capsule())
-                        
-                        Text("¥\(task.rewardAmount, specifier: "%.0f")")
-                            .font(.subheadline)
-                            .foregroundColor(.green)
-                    }
-                }
-                
-                // 进度条
+        VStack(alignment: .leading, spacing: 12) {
+            // 标题和状态
+            HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("进度")
-                            .font(.caption)
+                    Text(task.title ?? "未知挑战")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+
+                    if let description = task.taskDescription, !description.isEmpty {
+                        Text(description)
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(task.progress * 100, specifier: "%.0f")%")
-                            .font(.system(size: 12, weight: .medium))
+                            .lineLimit(2)
                     }
-                    
-                    ProgressView(value: task.progress)
-                        .tint(taskStatus.color)
+
+                    // TODO: Temporarily commented out due to Core Data issues
+                    // 类别和子类别标签
+                    // if let category = task.category, let subcategory = task.subcategory {
+                    //     HStack(spacing: 4) {
+                    //         Text(category)
+                    //             .font(.caption)
+                    //             .padding(.horizontal, 6)
+                    //             .padding(.vertical, 2)
+                    //             .background(Color.blue.opacity(0.1))
+                    //             .foregroundColor(.blue)
+                    //             .clipShape(Capsule())
+                    //
+                    //         Text(subcategory)
+                    //             .font(.caption)
+                    //             .padding(.horizontal, 6)
+                    //             .padding(.vertical, 2)
+                    //             .background(Color.green.opacity(0.1))
+                    //             .foregroundColor(.green)
+                    //             .clipShape(Capsule())
+                    //     }
+                    // }
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(taskStatus.rawValue)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(taskStatus.color.opacity(0.2))
+                        .foregroundColor(taskStatus.color)
+                        .clipShape(Capsule())
+
+                    Text("¥\(task.rewardAmount, specifier: "%.0f")")
+                        .font(.subheadline)
+                        .foregroundColor(.green)
                 }
             }
-            .padding(.vertical, 8)
+
+            // 进度条
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("进度")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(task.progress * 100, specifier: "%.0f")%")
+                        .font(.system(size: 12, weight: .medium))
+                }
+
+                ProgressView(value: task.progress)
+                    .tint(taskStatus.color)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showingDetailView = true
+        }
         .sheet(isPresented: $showingDetailView) {
             BigTaskDetailView(task: task)
         }
