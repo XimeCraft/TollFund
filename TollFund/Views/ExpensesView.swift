@@ -249,6 +249,7 @@ struct AddExpenseView: View {
     @State private var amount = 0.0
     @State private var selectedCategory = ExpenseCategory.other
     @State private var date = Date()
+    @State private var isEditingAmount = false
     
     var body: some View {
         NavigationView {
@@ -259,9 +260,29 @@ struct AddExpenseView: View {
                     HStack {
                         Text("金额")
                         Spacer()
-                        TextField("金额", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
+                        if isEditingAmount {
+                            TextField("输入金额", value: $amount, format: .number)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 100)
+                                .onSubmit {
+                                    isEditingAmount = false
+                                }
+                        } else {
+                            Button(action: {
+                                isEditingAmount = true
+                            }) {
+                                Text("¥\(amount, specifier: "%.2f")")
+                                    .foregroundColor(.red)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                         Text("元")
                             .foregroundColor(.secondary)
                     }
