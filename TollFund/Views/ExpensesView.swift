@@ -42,7 +42,7 @@ struct ExpensesView: View {
                 } else {
                     List {
                         ForEach(filteredExpenses, id: \.id) { expense in
-                            ExpenseRow(expense: expense)
+                            ExpenseRow(expense: expense, onDelete: deleteExpense)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     editingExpense = expense
@@ -183,7 +183,8 @@ struct CategoryFilterButton: View {
 
 struct ExpenseRow: View {
     @ObservedObject var expense: Expense
-    
+    var onDelete: (Expense) -> Void
+
     var expenseCategory: ExpenseCategory {
         ExpenseCategory(rawValue: expense.category ?? "") ?? .other
     }
@@ -231,7 +232,7 @@ struct ExpenseRow: View {
         .padding(.vertical, 8)
         .contextMenu {
             Button(role: .destructive) {
-                deleteExpense(expense)
+                onDelete(expense)
             } label: {
                 Label("删除", systemImage: "trash")
             }
