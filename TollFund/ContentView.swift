@@ -25,7 +25,7 @@ struct ContentView: View {
             BigTasksView()
                 .tabItem {
                     Image(systemName: "target")
-                    Text("大任务")
+                    Text("挑战")
                 }
             
             ExpensesView()

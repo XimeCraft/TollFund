@@ -105,14 +105,35 @@ struct DailyTasksView: View {
                     }
                 }
 
-                // 底部操作栏
-                BottomActionBar(
-                    onAddTask: { showingAddTask = true },
-                    onTaskConfig: { showingTaskConfig = true },
-                    onHistory: { showingHistory = true }
-                )
             }
             .navigationTitle("每日任务")
+            .navigationBarItems(trailing:
+                HStack(spacing: 16) {
+                    // 历史记录按钮
+                    Button(action: {
+                        showingHistory = true
+                    }) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .foregroundColor(.purple)
+                    }
+
+                    // 任务配置按钮（齿轮）
+                    Button(action: {
+                        showingTaskConfig = true
+                    }) {
+                        Image(systemName: "gear")
+                            .foregroundColor(.blue)
+                    }
+
+                    // 添加任务按钮（加号）
+                    Button(action: {
+                        showingAddTask = true
+                    }) {
+                        Image(systemName: "plus")
+                            .foregroundColor(.green)
+                    }
+                }
+            )
             .sheet(isPresented: $showingAddTask) {
                 AddDailyTaskView(selectedDate: selectedDate)
             }
@@ -497,68 +518,6 @@ struct DailyTaskRow: View {
     }
 }
 
-// MARK: - 底部操作栏
-struct BottomActionBar: View {
-    let onAddTask: () -> Void
-    let onTaskConfig: () -> Void
-    let onHistory: () -> Void
-
-    var body: some View {
-        HStack(spacing: 16) {
-            ActionButton(
-                title: "添加任务",
-                icon: "plus.circle.fill",
-                color: .green,
-                action: onAddTask
-            )
-
-            ActionButton(
-                title: "任务配置",
-                icon: "slider.horizontal.3",
-                color: .blue,
-                action: onTaskConfig
-            )
-
-            ActionButton(
-                title: "历史记录",
-                icon: "clock.arrow.circlepath",
-                color: .purple,
-                action: onHistory
-            )
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
-                .ignoresSafeArea(edges: .bottom)
-        )
-    }
-}
-
-struct ActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(color)
-
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.primary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 // MARK: - 添加每日任务视图
 struct AddDailyTaskView: View {

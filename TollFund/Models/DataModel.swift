@@ -40,22 +40,14 @@ enum TaskType: String, CaseIterable {
 enum ExpenseCategory: String, CaseIterable {
     case games = "游戏"
     case toys = "玩具"
-    case books = "书籍"
-    case entertainment = "娱乐"
     case electronics = "电子产品"
-    case clothes = "服装"
-    case food = "美食"
     case other = "其他"
     
     var icon: String {
         switch self {
         case .games: return "gamecontroller.fill"
         case .toys: return "teddybear.fill"
-        case .books: return "book.fill"
-        case .entertainment: return "tv.fill"
         case .electronics: return "laptopcomputer"
-        case .clothes: return "tshirt.fill"
-        case .food: return "fork.knife"
         case .other: return "bag.fill"
         }
     }
@@ -64,11 +56,7 @@ enum ExpenseCategory: String, CaseIterable {
         switch self {
         case .games: return .purple
         case .toys: return .yellow
-        case .books: return .blue
-        case .entertainment: return .red
         case .electronics: return .gray
-        case .clothes: return .pink
-        case .food: return .orange
         case .other: return .brown
         }
     }
