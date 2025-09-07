@@ -32,7 +32,7 @@ struct BigTasksView: View {
                                 List {
                                     ForEach(getTasksForStatus(status), id: \.id) { task in
                                         BigTaskRow(task: task)
-                                            .swipeActions(edge: .trailing) {
+                                            .contextMenu {
                                                 Button(role: .destructive) {
                                                     deleteTask(task)
                                                 } label: {

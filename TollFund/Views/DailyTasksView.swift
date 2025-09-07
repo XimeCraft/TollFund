@@ -440,7 +440,7 @@ struct TaskSectionView: View {
                     DailyTaskRow(task: task, onEdit: {
                         onEditTask(task)
                     })
-                    .swipeActions(edge: .trailing) {
+                    .contextMenu {
                         Button(role: .destructive) {
                             onDeleteTask(task)
                         } label: {
@@ -1148,6 +1148,7 @@ struct EditFixedTaskTemplateView: View {
     @State private var selectedTaskType: TaskType
     @State private var rewardAmount: Double
     @State private var isActive: Bool
+    @State private var showingDeleteAlert = false
 
     init(template: FixedTaskTemplate) {
         self.template = template
@@ -1238,6 +1239,21 @@ struct EditFixedTaskTemplateView: View {
                         dismiss()
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(role: .destructive) {
+                        showingDeleteAlert = true
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                }
+            }
+            .alert("确认删除", isPresented: $showingDeleteAlert) {
+                Button("取消", role: .cancel) { }
+                Button("删除", role: .destructive) {
+                    deleteTemplate()
+                }
+            } message: {
+                Text("确定要删除这个任务模板吗？此操作无法撤销。")
             }
         }
     }
@@ -1248,6 +1264,12 @@ struct EditFixedTaskTemplateView: View {
         template.rewardAmount = rewardAmount
         template.isActive = isActive
 
+        dataManager.save()
+        dismiss()
+    }
+
+    private func deleteTemplate() {
+        viewContext.delete(template)
         dataManager.save()
         dismiss()
     }
@@ -1265,6 +1287,7 @@ struct EditDailyTaskView: View {
     @State private var selectedTaskType: TaskType
     @State private var rewardAmount: Double
     @State private var isFixed: Bool
+    @State private var showingDeleteAlert = false
     
     init(task: DailyTask) {
         self.task = task
@@ -1341,13 +1364,29 @@ struct EditDailyTaskView: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
-                        saveTask()
+                    HStack {
+                        Button(role: .destructive) {
+                            showingDeleteAlert = true
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+
+                        Button("保存") {
+                            saveTask()
+                        }
+                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+            }
+            .alert("确认删除", isPresented: $showingDeleteAlert) {
+                Button("取消", role: .cancel) { }
+                Button("删除", role: .destructive) {
+                    deleteTask()
+                }
+            } message: {
+                Text("确定要删除这个任务吗？此操作无法撤销。")
             }
         }
     }
@@ -1357,12 +1396,23 @@ struct EditDailyTaskView: View {
         task.taskType = selectedTaskType.rawValue
         task.rewardAmount = rewardAmount
         task.isFixed = isFixed
-        
+
         do {
             try viewContext.save()
             print("✅ 任务编辑保存成功")
         } catch {
             print("❌ 保存任务编辑失败: \(error)")
+        }
+        dismiss()
+    }
+
+    private func deleteTask() {
+        viewContext.delete(task)
+        do {
+            try viewContext.save()
+            print("✅ 任务删除成功")
+        } catch {
+            print("❌ 删除任务失败: \(error)")
         }
         dismiss()
     }
