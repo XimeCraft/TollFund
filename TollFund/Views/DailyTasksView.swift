@@ -346,17 +346,25 @@ struct DateSelectorView: View {
     @Binding var selectedDate: Date
 
     var body: some View {
-        HStack {
+        HStack(spacing: 20) {
+            // 左侧箭头按钮
             Button(action: {
                 selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
             }) {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .foregroundColor(.blue)
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.1))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
             }
+            .buttonStyle(PlainButtonStyle())
 
             Spacer()
 
+            // 日期显示
             VStack(spacing: 4) {
                 Text(formattedDate(selectedDate))
                     .font(.headline)
@@ -369,22 +377,31 @@ struct DateSelectorView: View {
 
             Spacer()
 
+            // 右侧箭头按钮
             Button(action: {
                 let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
                 if tomorrow <= Date() { // 不允许选择未来的日期
                     selectedDate = tomorrow
                 }
             }) {
-                Image(systemName: "chevron.right")
-                    .font(.title2)
-                    .foregroundColor(selectedDate < Date() ? .blue : .gray.opacity(0.3))
+                ZStack {
+                    Circle()
+                        .fill(selectedDate < Date() ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(selectedDate < Date() ? .blue : .gray.opacity(0.3))
+                }
             }
             .disabled(selectedDate >= Date())
+            .buttonStyle(PlainButtonStyle())
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(.ultraThinMaterial)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
         )
     }
 
