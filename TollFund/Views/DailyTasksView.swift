@@ -9,10 +9,14 @@ struct DailyTasksView: View {
     @State private var selectedDate = Date()
     @State private var showingAddTask = false
     @State private var showingTaskConfig = false
-    @State private var showingHistory = false
     @State private var editingTask: DailyTask?
     @State private var taskToDelete: DailyTask?
     @State private var showingDeleteConfirmation = false
+
+    // 历史记录相关的状态变量
+    @State private var historySelectedDate = Date()
+    @State private var historyTasksForSelectedDate: [DailyTask] = []
+    @State private var showingHistoryDatePicker = false
 
     // 使用 @FetchRequest 来自动监听数据变化
     @FetchRequest(
@@ -60,63 +64,75 @@ struct DailyTasksView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // 日期选择器
-                DateSelectorView(selectedDate: $selectedDate)
-                    .padding(.horizontal)
+                // 左右滑动翻页视图
+                TabView {
+                    // 第一页：每日任务
+                    VStack {
+                        // 日期选择器
+                        DateSelectorView(selectedDate: $selectedDate)
+                            .padding(.horizontal)
 
-                if tasksForSelectedDate.isEmpty {
-                    EmptyStateView(selectedDate: selectedDate)
-                } else {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // 固定任务区域
-                            if !fixedTasks.isEmpty {
-                                TaskSectionView(
-                                    title: "固定任务",
-                                    tasks: fixedTasks,
-                                    icon: "pin.fill",
-                                    color: .blue,
-                                    onEditTask: { task in
-                                        editingTask = task
-                                    },
-                                    onDeleteTask: { task in
-                                        handleDeleteTask(task)
+                        if tasksForSelectedDate.isEmpty {
+                            EmptyStateView(selectedDate: selectedDate)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 20) {
+                                    // 固定任务区域
+                                    if !fixedTasks.isEmpty {
+                                        TaskSectionView(
+                                            title: "固定任务",
+                                            tasks: fixedTasks,
+                                            icon: "pin.fill",
+                                            color: .blue,
+                                            onEditTask: { task in
+                                                editingTask = task
+                                            },
+                                            onDeleteTask: { task in
+                                                handleDeleteTask(task)
+                                            }
+                                        )
                                     }
-                                )
-                            }
 
-                            // 临时任务区域
-                            if !tempTasks.isEmpty {
-                                TaskSectionView(
-                                    title: "临时任务",
-                                    tasks: tempTasks,
-                                    icon: "plus.circle",
-                                    color: .green,
-                                    onEditTask: { task in
-                                        editingTask = task
-                                    },
-                                    onDeleteTask: { task in
-                                        handleDeleteTask(task)
+                                    // 临时任务区域
+                                    if !tempTasks.isEmpty {
+                                        TaskSectionView(
+                                            title: "临时任务",
+                                            tasks: tempTasks,
+                                            icon: "plus.circle",
+                                            color: .green,
+                                            onEditTask: { task in
+                                                editingTask = task
+                                            },
+                                            onDeleteTask: { task in
+                                                handleDeleteTask(task)
+                                            }
+                                        )
                                     }
-                                )
+                                }
+                                .padding(.horizontal)
                             }
                         }
-                        .padding(.horizontal)
+                    }
+                    .tabItem {
+                        Image(systemName: "checklist")
+                        Text("今日任务")
+                    }
+
+                    // 第二页：历史记录
+                    VStack {
+                        TaskHistoryContent(selectedDate: $historySelectedDate, tasksForSelectedDate: $historyTasksForSelectedDate, showingDatePicker: $showingHistoryDatePicker, editingTask: $editingTask)
+                    }
+                    .tabItem {
+                        Image(systemName: "clock.arrow.circlepath")
+                        Text("历史记录")
                     }
                 }
-
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .indexViewStyle(.page(backgroundDisplayMode: .always))
             }
             .navigationTitle("每日任务")
             .navigationBarItems(trailing:
                 HStack(spacing: 16) {
-                    // 历史记录按钮
-                    Button(action: {
-                        showingHistory = true
-                    }) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .foregroundColor(.purple)
-                    }
-
                     // 任务配置按钮（齿轮）
                     Button(action: {
                         showingTaskConfig = true
@@ -140,8 +156,8 @@ struct DailyTasksView: View {
             .sheet(isPresented: $showingTaskConfig) {
                 FixedTaskConfigView()
             }
-            .sheet(isPresented: $showingHistory) {
-                TaskHistoryView()
+            .sheet(isPresented: $showingHistoryDatePicker) {
+                DatePickerSheet(selectedDate: $historySelectedDate, isPresented: $showingHistoryDatePicker)
             }
             .sheet(item: $editingTask) { task in
                 EditDailyTaskView(task: task)
@@ -162,6 +178,9 @@ struct DailyTasksView: View {
             .onChange(of: fixedTaskTemplates.map { "\($0.isActive)" }.joined()) { _ in
                 print("🔄 固定任务模板激活状态发生变化，重新生成任务")
                 ensureDailyTasksExist(for: selectedDate)
+            }
+            .onChange(of: historySelectedDate) { newDate in
+                loadTasksForHistoryDate(newDate)
             }
             .alert("确认删除", isPresented: $showingDeleteConfirmation) {
                 Button("取消", role: .cancel) {
@@ -863,163 +882,8 @@ struct FixedTaskConfigView: View {
             dataManager.save()
         }
     }
-}
 
-// MARK: - 任务历史视图
-struct TaskHistoryView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var selectedDate = Date()
-    @State private var tasksForSelectedDate: [DailyTask] = []
-    @State private var showingDatePicker = false
-    @State private var editingTask: DailyTask?
-
-    var body: some View {
-        NavigationView {
-            VStack {
-                // 只显示选中的日期，点击后弹出日历选择器
-                Button(action: {
-                    showingDatePicker = true
-                }) {
-                    HStack {
-                        Text(formattedDate(selectedDate))
-                            .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(.primary)
-
-                        Spacer()
-
-                        Image(systemName: "calendar")
-                            .foregroundColor(.blue)
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.ultraThinMaterial)
-                    )
-                    .padding(.horizontal)
-                }
-
-                if tasksForSelectedDate.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "calendar.badge.exclamationmark")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-
-                        Text("这天没有任务记录")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        ForEach(tasksForSelectedDate, id: \.id) { task in
-                            DailyTaskRow(task: task, onEdit: {
-                                editingTask = task
-                            })
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                }
-            }
-            .navigationTitle("历史补打卡")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("关闭") {
-                        dismiss()
-                    }
-                }
-            }
-            .sheet(isPresented: $showingDatePicker) {
-                DatePickerSheet(selectedDate: $selectedDate, isPresented: $showingDatePicker)
-            }
-            .sheet(item: $editingTask) { task in
-                EditDailyTaskView(task: task)
-            }
-            .onAppear {
-                print("📚 进入历史记录页面")
-                ensureTasksExistForDate(selectedDate)
-            }
-            .onChange(of: selectedDate) { newDate in
-                ensureTasksExistForDate(newDate)
-            }
-        }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年MM月dd日 EEEE"
-        formatter.locale = Locale(identifier: "zh_CN")
-        return formatter.string(from: date)
-    }
-
-    private func ensureTasksExistForDate(_ date: Date) {
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-
-        // 获取所有活跃的固定任务模板
-        let templateFetch: NSFetchRequest<FixedTaskTemplate> = FixedTaskTemplate.fetchRequest()
-        templateFetch.predicate = NSPredicate(format: "isActive == YES")
-
-        guard let templates = try? viewContext.fetch(templateFetch) else {
-            print("❌ 无法获取固定任务模板")
-            return
-        }
-
-        print("📋 找到 \(templates.count) 个活跃的固定任务模板")
-
-        // 为每个模板检查是否已有对应日期的任务
-        for template in templates {
-            let taskFetch: NSFetchRequest<DailyTask> = DailyTask.fetchRequest()
-            taskFetch.predicate = NSPredicate(format: "isFixed == YES AND taskDate == %@ AND title == %@", startOfDay as NSDate, template.title ?? "")
-
-            do {
-                let existingTasks = try viewContext.fetch(taskFetch)
-                if existingTasks.isEmpty {
-                    // 创建新的固定任务
-                    print("➕ 为日期 \(startOfDay) 创建固定任务: \(template.title ?? "")")
-                    let newTask = DailyTask(context: viewContext)
-                    newTask.id = UUID()
-                    newTask.title = template.title
-                    newTask.taskType = template.taskType
-                    // 保存创建时的模板金额，之后不会随模板变化而变化
-                    newTask.rewardAmount = template.rewardAmount
-                    newTask.originalRewardAmount = template.rewardAmount
-                    newTask.isFixed = true
-                    newTask.isCompleted = false
-                    newTask.taskDate = startOfDay
-                    newTask.createdDate = Date()
-                    // 记录任务创建时的模板信息，用于历史追踪
-                    print("💰 创建任务金额: ¥\(template.rewardAmount) (模板当前金额)")
-                } else {
-                    print("✅ 固定任务已存在: \(template.title ?? "")")
-                    // 历史任务保持原有金额，不受模板变化影响
-                    for task in existingTasks {
-                        print("   📋 历史任务金额: ¥\(task.rewardAmount)")
-                    }
-                }
-            } catch {
-                print("❌ 检查固定任务时出错: \(error)")
-            }
-        }
-
-        // 保存更改并刷新UI
-        do {
-            try viewContext.save()
-            print("💾 固定任务数据已保存")
-
-            // 强制刷新UI
-            DispatchQueue.main.async {
-                self.loadTasksForDate(date)
-                print("🔄 UI已刷新")
-            }
-        } catch {
-            print("❌ 保存固定任务数据失败: \(error)")
-        }
-    }
-
-    private func loadTasksForDate(_ date: Date) {
+    private func loadTasksForHistoryDate(_ date: Date) {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
@@ -1030,17 +894,17 @@ struct TaskHistoryView: View {
 
         do {
             let tasks = try viewContext.fetch(fetchRequest)
-            tasksForSelectedDate = tasks
-            print("📅 加载日期 \(startOfDay) 的任务: \(tasks.count) 个任务")
+            historyTasksForSelectedDate = tasks
+            print("📚 加载历史日期 \(startOfDay) 的任务: \(tasks.count) 个任务")
             for task in tasks {
                 print("   - \(task.title ?? "") (\(task.isFixed ? "固定" : "临时"))")
             }
         } catch {
-            print("❌ 加载任务失败: \(error)")
-            tasksForSelectedDate = []
+            print("❌ 加载历史任务失败: \(error)")
+            historyTasksForSelectedDate = []
         }
     }
-}
+// MARK: - 任务历史视图 (已移除，功能整合到主视图)
 
 // MARK: - 日期选择器弹窗
 struct DatePickerSheet: View {
@@ -1438,6 +1302,70 @@ struct EditDailyTaskView: View {
             print("❌ 保存任务编辑失败: \(error)")
         }
         dismiss()
+    }
+}
+
+// MARK: - 历史记录内容视图
+struct TaskHistoryContent: View {
+    @Binding var selectedDate: Date
+    @Binding var tasksForSelectedDate: [DailyTask]
+    @Binding var showingDatePicker: Bool
+    @Binding var editingTask: DailyTask?
+
+    var body: some View {
+        VStack {
+            // 日期选择器
+            Button(action: {
+                showingDatePicker = true
+            }) {
+                HStack {
+                    Text(formattedDate(selectedDate))
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Image(systemName: "calendar")
+                        .foregroundColor(.blue)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                )
+                .padding(.horizontal)
+            }
+
+            if tasksForSelectedDate.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 60))
+                        .foregroundColor(.secondary)
+
+                    Text("这天没有任务记录")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(tasksForSelectedDate, id: \.id) { task in
+                        DailyTaskRow(task: task, onEdit: {
+                            editingTask = task
+                        })
+                    }
+                }
+                .listStyle(PlainListStyle())
+            }
+        }
+        .padding(.top)
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年MM月dd日 EEEE"
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: date)
     }
 }
 

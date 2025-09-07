@@ -258,41 +258,6 @@ struct AddExpenseView: View {
                     
                     DatePicker("消费日期", selection: $date, displayedComponents: .date)
                 }
-                
-                Section("常用消费") {
-                    PresetExpenseButton(
-                        title: "买游戏",
-                        category: .games,
-                        amount: 60
-                    ) { title, category, amount in
-                        self.title = title
-                        self.selectedCategory = category
-                        self.amount = amount
-                    }
-                    
-                    PresetExpenseButton(
-                        title: "买乐高",
-                        category: .toys,
-                        amount: 200
-                    ) { title, category, amount in
-                        self.title = title
-                        self.selectedCategory = category
-                        self.amount = amount
-                    }
-                    
-                    
-                    
-                    PresetExpenseButton(
-                        title: "买耳机",
-                        category: .electronics,
-                        amount: 300
-                    ) { title, category, amount in
-                        self.title = title
-                        self.selectedCategory = category
-                        self.amount = amount
-                    }
-                    
-                }
             }
             .navigationTitle("添加消费记录")
             .navigationBarTitleDisplayMode(.inline)
@@ -326,39 +291,6 @@ struct AddExpenseView: View {
     }
 }
 
-struct PresetExpenseButton: View {
-    let title: String
-    let category: ExpenseCategory
-    let amount: Double
-    let onSelect: (String, ExpenseCategory, Double) -> Void
-    
-    var body: some View {
-        Button(action: {
-            onSelect(title, category, amount)
-        }) {
-            HStack {
-                Image(systemName: category.icon)
-                    .foregroundColor(category.color)
-                    .frame(width: 20)
-                
-                Text(title)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text("¥\(amount, specifier: "%.0f")")
-                    .foregroundColor(.red)
-                    .font(.subheadline)
-                    .font(.system(size: 17, weight: .medium))
-                
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 struct ExpenseEmptyStateView: View {
     let selectedCategory: ExpenseCategory?
