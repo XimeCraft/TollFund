@@ -448,11 +448,9 @@ struct TaskSectionView: View {
                         }
                     }
                     .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                 }
             }
-            .listStyle(PlainListStyle())
+            .listStyle(InsetGroupedListStyle())
             .frame(height: CGFloat(tasks.count * 80)) // 动态高度
         }
         .background(

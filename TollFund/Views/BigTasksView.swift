@@ -41,7 +41,7 @@ struct BigTasksView: View {
                                             }
                                     }
                                 }
-                                .listStyle(PlainListStyle())
+                                .listStyle(InsetGroupedListStyle())
                             }
                         }
                         .tabItem {
