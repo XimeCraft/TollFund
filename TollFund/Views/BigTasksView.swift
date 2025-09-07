@@ -4,40 +4,90 @@ import CoreData
 struct BigTasksView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var dataManager: PersistenceController
-    
+
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \BigTask.createdDate, ascending: false)],
         animation: .default)
     private var bigTasks: FetchedResults<BigTask>
-    
+
     @State private var showingAddTask = false
-    @State private var selectedStatus = BigTaskStatus.inProgress
-    
-    var filteredTasks: [BigTask] {
-        bigTasks.filter { task in
-            BigTaskStatus(rawValue: task.status ?? "") == selectedStatus
-        }
+
+    // 为每个状态创建过滤后的任务列表
+    var notStartedTasks: [BigTask] {
+        bigTasks.filter { BigTaskStatus(rawValue: $0.status ?? "") == .notStarted }
     }
-    
+
+    var inProgressTasks: [BigTask] {
+        bigTasks.filter { BigTaskStatus(rawValue: $0.status ?? "") == .inProgress }
+    }
+
+    var completedTasks: [BigTask] {
+        bigTasks.filter { BigTaskStatus(rawValue: $0.status ?? "") == .completed }
+    }
+
     var body: some View {
         NavigationView {
-            VStack {
-                // 状态筛选器
-                StatusFilterPicker(selectedStatus: $selectedStatus)
-                
-                if filteredTasks.isEmpty {
-                    BigTaskEmptyStateView(status: selectedStatus)
-                } else {
-                    List {
-                        ForEach(filteredTasks, id: \.id) { task in
-                            BigTaskRow(task: task)
-                        }
-                        .onDelete(perform: deleteTasks)
-                    }
-                    .listStyle(PlainListStyle())
+            VStack(spacing: 0) {
+                // 页面指示器
+                HStack {
+                    Spacer()
+                    Text("未开始")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(12)
+
+                    Spacer()
+
+                    Text("进行中")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(12)
+
+                    Spacer()
+
+                    Text("已完成")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(12)
+
+                    Spacer()
                 }
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
+
+                // 左右滑动页面
+                TabView {
+                    // 未开始页面
+                    TaskListView(tasks: notStartedTasks, emptyMessage: "还没有未开始的挑战")
+                        .tabItem {
+                            Text("未开始")
+                        }
+
+                    // 进行中页面
+                    TaskListView(tasks: inProgressTasks, emptyMessage: "还没有进行中的挑战")
+                        .tabItem {
+                            Text("进行中")
+                        }
+
+                    // 已完成页面
+                    TaskListView(tasks: completedTasks, emptyMessage: "还没有完成的挑战")
+                        .tabItem {
+                            Text("已完成")
+                        }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .navigationTitle("挑战")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddTask = true }) {
@@ -51,17 +101,53 @@ struct BigTasksView: View {
         }
     }
     
+}
+
+// MARK: - 任务列表视图组件
+struct TaskListView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var dataManager: PersistenceController
+
+    let tasks: [BigTask]
+    let emptyMessage: String
+
+    var body: some View {
+        if tasks.isEmpty {
+            VStack(spacing: 16) {
+                Image(systemName: "target")
+                    .font(.system(size: 60))
+                    .foregroundColor(.secondary)
+
+                Text(emptyMessage)
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            List {
+                ForEach(tasks, id: \.id) { task in
+                    BigTaskRow(task: task)
+                }
+                .onDelete(perform: deleteTasks)
+            }
+            .listStyle(PlainListStyle())
+        }
+    }
+
     private func deleteTasks(offsets: IndexSet) {
         withAnimation {
-            offsets.map { filteredTasks[$0] }.forEach(viewContext.delete)
+            offsets.map { tasks[$0] }.forEach(viewContext.delete)
             dataManager.save()
         }
     }
 }
 
+// MARK: - 状态筛选器组件（已移除，使用页面滑动替代）
 struct StatusFilterPicker: View {
     @Binding var selectedStatus: BigTaskStatus
-    
+
     var body: some View {
         Picker("状态", selection: $selectedStatus) {
             ForEach(BigTaskStatus.allCases, id: \.self) { status in
