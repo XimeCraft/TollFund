@@ -831,12 +831,20 @@ struct FixedTaskConfigView: View {
                             )
                         } else {
                             // 如果模板不存在，创建一个临时的
-                            Button(action: {
-                                editingTemplateTitle = title
-                                editingTemplateCategory = category
-                                editingTemplateAmount = amount
+                            let buttonAction = {
+                                // 创建新的模板
+                                let template = FixedTaskTemplate(context: viewContext)
+                                template.id = UUID()
+                                template.title = title
+                                template.taskType = category
+                                template.rewardAmount = amount
+                                template.isActive = false
+
+                                editingTemplate = template
                                 showingTemplateEditor = true
-                            }) {
+                            }
+
+                            Button(action: buttonAction) {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(title)
